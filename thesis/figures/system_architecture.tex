@@ -1,0 +1,50 @@
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    font=\small,
+    >=Stealth,
+    block/.style={rectangle, rounded corners=2pt, draw=#1!70!black, fill=#1!9, minimum width=2.45cm, minimum height=0.82cm, align=center, line width=0.55pt},
+    store/.style={cylinder, shape border rotate=90, aspect=0.22, draw=#1!70!black, fill=#1!9, minimum width=2.2cm, minimum height=0.92cm, align=center, line width=0.55pt},
+    exportbox/.style={rectangle, rounded corners=2pt, draw=green!55!black, fill=green!10, minimum width=1.85cm, minimum height=0.68cm, align=center, line width=0.55pt},
+    arrow/.style={->, line width=0.75pt, draw=black!70},
+    lane/.style={rectangle, rounded corners=4pt, draw=black!35, fill=#1!4, inner sep=9pt}
+]
+
+\node[block=teal] (docs) at (0, 1.55) {电力领域\\多模态文档};
+\node[block=cyan, right=0.9cm of docs] (parser) {算法A\\文档解析};
+\node[store=blue, right=0.9cm of parser] (kg) {Neo4j\\知识图谱};
+\node[store=orange, right=0.9cm of kg] (vindex) {HNSW\\向量索引};
+\node[block=violet, right=0.9cm of vindex] (afg) {智能体\\特征图};
+
+\node[block=red] (task) at (0, -1.25) {用户任务\\描述};
+\node[block=blue, right=0.9cm of task] (retrieve) {算法B\\GraphRAG检索};
+\node[block=cyan, right=0.9cm of retrieve] (decompose) {LLM\\任务分解};
+\node[block=violet, right=0.9cm of decompose] (match) {算法C\\智能体匹配};
+\node[block=orange, right=0.9cm of match] (dag) {算法D\\DAG编排验证};
+
+\node[exportbox, below=0.55cm of dag, xshift=-2.35cm] (mermaid) {Mermaid图};
+\node[exportbox, below=0.55cm of dag] (bpmn) {BPMN 2.0};
+\node[exportbox, below=0.55cm of dag, xshift=2.35cm] (langgraph) {LangGraph代码};
+
+\draw[arrow] (docs) -- (parser);
+\draw[arrow] (parser) -- (kg);
+\draw[arrow] (kg) -- (vindex);
+\draw[arrow] (vindex) -- (afg);
+
+\draw[arrow] (task) -- (retrieve);
+\draw[arrow] (retrieve) -- (decompose);
+\draw[arrow] (decompose) -- (match);
+\draw[arrow] (match) -- (dag);
+\draw[arrow] (dag) -- (mermaid);
+\draw[arrow] (dag) -- (bpmn);
+\draw[arrow] (dag) -- (langgraph);
+
+\draw[arrow, dashed, draw=blue!70!black] (kg.south) to[out=-90,in=90] node[right, text=black!65] {结构化上下文} (retrieve.north);
+\draw[arrow, dashed, draw=orange!80!black] (vindex.south) to[out=-90,in=90] (retrieve.north);
+\draw[arrow, dashed, draw=violet!80!black] (afg.south) to[out=-90,in=90] node[right, text=black!65] {能力/工具/接口} (match.north);
+
+\begin{scope}[on background layer]
+    \node[lane=teal, fit=(docs) (parser) (kg) (vindex) (afg), label={[font=\small]left:离线构建阶段}] {};
+    \node[lane=orange, fit=(task) (retrieve) (decompose) (match) (dag) (mermaid) (bpmn) (langgraph), label={[font=\small]left:在线生成阶段}] {};
+\end{scope}
+\end{tikzpicture}%
+}

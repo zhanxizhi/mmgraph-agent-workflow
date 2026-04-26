@@ -1,0 +1,5 @@
+metric ours_full pure_llm vector_rag graphrag_nomatch
+Exec 1.000 1.000 1.000 1.000
+SC 0.768 0.696 0.784 0.784
+RAA 0.296 0.000 0.425 0.056
+Logic 0.711 0.947 0.912 0.868

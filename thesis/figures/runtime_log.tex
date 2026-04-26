@@ -1,0 +1,31 @@
+\begin{tikzpicture}[
+    every node/.style={font=\ttfamily\scriptsize, inner sep=0pt},
+]
+\node[
+    rectangle, rounded corners=2pt,
+    fill=black!92, draw=black!92,
+    inner sep=8pt,
+    text=white,
+    text width=15.5cm,
+    align=left,
+    anchor=north west,
+] {%
+\$ python scripts/run\_eval\_ops\_workflow.py\\
+\textcolor{lime!85}{=================================================================}\\
+\textcolor{lime!85}{[OPS]} 220kV线路距离保护I段动作跳闸，重合闸失败，...\\
+\textcolor{lime!85}{=================================================================}\\
+\textcolor{cyan!75}{[retriever]} 种子节点: 5 个\\
+\textcolor{cyan!75}{[retriever]} 扩展后子图: 95 节点, 139 边\\
+\textcolor{cyan!75}{[retriever]} 重排序后: 18 节点\\
+\ \ \textcolor{yellow!85}{[ours\_full]}\hphantom{XXXXXXX}exec=1.00\ sc=0.67\ role=0.33\ logic=0.60\ steps=5\ \hphantom{X}22.3s\\
+\ \ \textcolor{yellow!85}{[pure\_llm]}\hphantom{XXXXXXXX}exec=1.00\ sc=0.50\ role=0.00\ logic=0.90\ steps=5\ \hphantom{XX}8.6s\\
+\textcolor{cyan!75}{[retriever]} 种子节点: 5 个\\
+\textcolor{cyan!75}{[retriever]} 扩展后子图: 5 节点, 0 边\ \textcolor{gray!50}{(vector\_rag, max\_hops=0)}\\
+\textcolor{cyan!75}{[retriever]} 重排序后: 3 节点\\
+\ \ \textcolor{yellow!85}{[vector\_rag]}\hphantom{XXXXXX}exec=1.00\ sc=0.67\ role=0.67\ logic=0.90\ steps=6\ \hphantom{X}18.1s\\
+\textcolor{cyan!75}{[retriever]} 种子节点: 5 个\\
+\textcolor{cyan!75}{[retriever]} 扩展后子图: 95 节点, 139 边\\
+\textcolor{cyan!75}{[retriever]} 重排序后: 18 节点\\
+\ \ \textcolor{yellow!85}{[graphrag\_nomatch]}\hphantom{}exec=1.00\ sc=0.67\ role=0.00\ logic=0.90\ steps=5\ \hphantom{X}17.1s%
+};
+\end{tikzpicture}

@@ -1,0 +1,27 @@
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    width=\textwidth,
+    height=6.2cm,
+    ymin=0,
+    ymax=0.75,
+    bar width=7pt,
+    enlarge x limits=0.16,
+    ylabel={角色分配准确率（RAA）},
+    symbolic x coords={OPS,KQA,DA,AVG},
+    xtick=data,
+    ymajorgrids=true,
+    grid style={draw=black!12},
+    tick label style={font=\small},
+    label style={font=\small},
+    legend style={at={(0.5,-0.18)}, anchor=north, legend columns=2, font=\small, draw=none},
+    nodes near coords,
+    every node near coord/.append style={font=\scriptsize, rotate=90, anchor=west},
+]
+\addplot+[fill=blue!35, draw=blue!70!black] table[x=scene,y=ours_full] {figures/data/raa_by_scene.dat};
+\addplot+[fill=gray!30, draw=gray!70!black] table[x=scene,y=pure_llm] {figures/data/raa_by_scene.dat};
+\addplot+[fill=teal!35, draw=teal!70!black] table[x=scene,y=vector_rag] {figures/data/raa_by_scene.dat};
+\addplot+[fill=orange!40, draw=orange!80!black] table[x=scene,y=graphrag_nomatch] {figures/data/raa_by_scene.dat};
+\legend{ours\_full, pure\_llm, vector\_rag, graphrag\_nomatch}
+\end{axis}
+\end{tikzpicture}

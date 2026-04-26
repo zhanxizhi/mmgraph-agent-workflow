@@ -1,0 +1,26 @@
+\begin{tikzpicture}[
+    >=Stealth,
+    node distance=12mm and 6mm,
+    every node/.style={font=\scriptsize},
+    wfstep/.style={
+        rectangle, rounded corners=2pt,
+        draw=blue!55!black, fill=blue!8,
+        line width=0.5pt,
+        text width=4.6cm,
+        align=center,
+        inner sep=4pt, minimum height=10mm,
+    },
+    arr/.style={->, draw=black!60, line width=0.5pt},
+]
+% 第一行：三个无依赖的入口步骤
+\node[wfstep] (s1) {\textbf{s1} fault\_detector \\ \scriptsize 收集 220\,kV 距离保护 I 段动作\\与重合闸失败的告警和事件信息};
+\node[wfstep, right=of s1] (s2) {\textbf{s2} load\_forecaster \\ \scriptsize 分析故障录波数据，判断故障\\类型和是否为永久性故障};
+\node[wfstep, right=of s2] (s4) {\textbf{s4} restoration\_planner \\ \scriptsize 评估断路器及辅助设备状态，\\判断是否存在断路器失灵风险};
+
+% 第二行：以 s2 为前驱的两个步骤
+\node[wfstep, below=14mm of s2, xshift=-30mm] (s3) {\textbf{s3} protection\_checker \\ \scriptsize 检查保护装置及重合闸逻辑，\\评估是否存在保护误动或拒动};
+\node[wfstep, below=14mm of s2, xshift=30mm] (s5) {\textbf{s5} restoration\_planner \\ \scriptsize 综合判断永久性故障并制定\\隔离与恢复供电处置方案};
+
+\draw[arr] (s2.south) -- (s3.north);
+\draw[arr] (s2.south) -- (s5.north);
+\end{tikzpicture}

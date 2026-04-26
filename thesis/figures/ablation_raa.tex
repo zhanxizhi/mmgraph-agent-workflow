@@ -1,0 +1,22 @@
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    width=0.86\textwidth,
+    height=5.8cm,
+    ymin=0,
+    ymax=0.55,
+    bar width=22pt,
+    ylabel={RAA均值},
+    symbolic x coords={Full,NoSubgraph,NoMatch,NoKG},
+    xtick=data,
+    xticklabels={完整方法,去除子图,去除匹配,去除图谱},
+    ymajorgrids=true,
+    grid style={draw=black!12},
+    tick label style={font=\small},
+    label style={font=\small},
+    nodes near coords,
+    every node near coord/.append style={font=\small},
+]
+\addplot+[fill=violet!35, draw=violet!80!black] table[x=config,y=raa] {figures/data/ablation_raa.dat};
+\end{axis}
+\end{tikzpicture}

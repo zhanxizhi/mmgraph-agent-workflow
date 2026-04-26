@@ -1,0 +1,40 @@
+# 默认实验配置
+experiment_name: default
+seed: 42
+
+llm:
+  model: gpt-4o-mini
+  temperature: 0.0
+  max_tokens: 2048
+
+embedding:
+  text_model: BAAI/bge-m3
+  vision_model: openai/clip-vit-base-patch32
+
+graph_builder:
+  chunk_size: 512
+  chunk_overlap: 64
+  enable_flowchart_parsing: true
+  community_algorithm: leiden
+
+graphrag:
+  top_k: 10
+  max_hops: 2
+  use_community_summary: true
+  rerank: true
+
+agent_workflow:
+  decomposition_strategy: graph_guided   # graph_guided | pure_llm
+  matching_strategy: hybrid              # embedding | rule | hybrid
+  validation: true
+
+evaluation:
+  scenarios:
+    - ops_troubleshooting
+    - knowledge_qa
+    - data_analysis
+  baselines:
+    - pure_llm
+    - vector_rag
+    - text_only_graphrag
+    - ours_full

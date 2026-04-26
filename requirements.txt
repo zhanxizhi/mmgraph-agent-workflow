@@ -1,0 +1,50 @@
+# ===== Core LLM & Agent =====
+langchain>=0.3.0
+langchain-community>=0.3.0
+langchain-openai>=0.2.0
+langgraph>=0.2.0
+openai>=1.50.0
+
+# ===== GraphRAG =====
+graphrag>=0.5.0
+neo4j>=5.20.0
+networkx>=3.3
+
+# ===== Multimodal Encoders =====
+torch>=2.2.0
+transformers>=4.44.0
+sentence-transformers>=3.0.0
+open-clip-torch>=2.24.0
+pillow>=10.0.0
+
+# ===== OCR & Flowchart Parsing =====
+paddleocr>=2.7.0
+paddlepaddle>=2.6.0
+opencv-python>=4.9.0
+
+# ===== Data & Utils =====
+pydantic>=2.8.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+tqdm>=4.66.0
+pandas>=2.2.0
+numpy>=1.26.0
+
+# ===== Visualization & UI =====
+streamlit>=1.36.0
+matplotlib>=3.8.0
+plotly>=5.20.0
+
+# ===== Workflow Output =====
+# BPMN handling (optional, for export)
+# bpmn-python>=0.0.18
+
+# ===== Evaluation =====
+scikit-learn>=1.4.0
+rouge-score>=0.1.2
+
+# ===== Dev =====
+pytest>=8.0.0
+black>=24.0.0
+ruff>=0.5.0
+jupyter>=1.0.0

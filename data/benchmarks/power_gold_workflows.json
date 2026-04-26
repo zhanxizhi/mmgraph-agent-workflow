@@ -1,0 +1,69 @@
+[
+  {
+    "scene": "ops",
+    "task": "110kV变电站母线差动保护动作，三相短路故障，给出完整故障排查和电网恢复工作流",
+    "gold_steps": [
+      {"agent_id": "fault_detector",       "action": "分析母线差动保护动作告警，确认三相短路故障位置和类型"},
+      {"agent_id": "topology_analyzer",    "action": "检查断路器状态，评估故障隔离范围和受影响区域"},
+      {"agent_id": "protection_checker",   "action": "校验差动保护定值配置，分析保护动作合理性"},
+      {"agent_id": "power_flow_analyzer",  "action": "进行潮流计算，评估故障对系统电压和潮流的影响"},
+      {"agent_id": "restoration_planner",  "action": "制定倒闸操作票，给出隔离故障区域和分步恢复供电的操作顺序"},
+      {"agent_id": "report_generator",     "action": "生成故障分析报告，记录故障原因、处置过程和防范措施"}
+    ]
+  },
+  {
+    "scene": "ops",
+    "task": "220kV线路距离保护I段动作跳闸，重合闸失败，判断是否为永久性故障并制定处置方案",
+    "gold_steps": [
+      {"agent_id": "fault_detector",       "action": "分析距离保护动作和重合闸失败告警，初步判断故障性质"},
+      {"agent_id": "topology_analyzer",    "action": "解析故障线路两端开关状态，确认线路已完全隔离"},
+      {"agent_id": "protection_checker",   "action": "验证距离保护I段整定值与故障测距结果的一致性"},
+      {"agent_id": "power_flow_analyzer",  "action": "计算线路退出后系统潮流分布，识别过载风险"},
+      {"agent_id": "restoration_planner",  "action": "制定故障巡线和临时供电方案，规划检修操作票"},
+      {"agent_id": "report_generator",     "action": "生成故障报告，包括故障分析结论和后续处置建议"}
+    ]
+  },
+  {
+    "scene": "kqa",
+    "task": "什么是继电保护的选择性原则？如何保证上下级保护的时限配合？结合差动保护和距离保护举例说明",
+    "gold_steps": [
+      {"agent_id": "knowledge_retriever",  "action": "检索继电保护选择性原则、时限配合相关规程和技术标准"},
+      {"agent_id": "knowledge_retriever",  "action": "检索差动保护原理和适用范围"},
+      {"agent_id": "protection_checker",   "action": "分析上下级保护时限配合关系，计算时间级差要求"},
+      {"agent_id": "regulation_checker",   "action": "验证保护配合方案是否符合电力安全规程要求"},
+      {"agent_id": "report_generator",     "action": "整合形成完整的选择性原则解释和配合方案说明"}
+    ]
+  },
+  {
+    "scene": "kqa",
+    "task": "解释什么是电力系统稳定性，暂态稳定、动态稳定、静态稳定三者有何区别，各用什么方法分析",
+    "gold_steps": [
+      {"agent_id": "knowledge_retriever",  "action": "检索电力系统稳定性的定义和分类标准"},
+      {"agent_id": "knowledge_retriever",  "action": "检索暂态稳定、动态稳定、静态稳定的技术定义和判据"},
+      {"agent_id": "power_flow_analyzer",  "action": "说明各类稳定分析的计算方法（等面积法、时域仿真、特征值分析）"},
+      {"agent_id": "report_generator",     "action": "生成三类稳定性对比分析报告"}
+    ]
+  },
+  {
+    "scene": "da",
+    "task": "基于近30天OPSD负荷历史数据，预测未来24小时分时段负荷，识别峰谷差并给出需求侧管理建议",
+    "gold_steps": [
+      {"agent_id": "anomaly_detector",     "action": "加载30天历史负荷数据，进行数据质量检查和异常点清洗"},
+      {"agent_id": "load_forecaster",      "action": "使用时间序列模型（Prophet/LSTM）预测未来24小时分时段负荷"},
+      {"agent_id": "anomaly_detector",     "action": "计算预测负荷的峰谷差，识别高峰时段和低谷时段"},
+      {"agent_id": "renewable_analyzer",   "action": "分析新能源出力预测，评估对负荷净值的影响"},
+      {"agent_id": "report_generator",     "action": "生成负荷预测报告，提出削峰填谷和需求侧管理建议"}
+    ]
+  },
+  {
+    "scene": "da",
+    "task": "分析某地区过去一年风电和光伏出力特性，计算容量因子和弃电率，评估新能源消纳能力",
+    "gold_steps": [
+      {"agent_id": "anomaly_detector",     "action": "加载年度风电和光伏发电数据，清洗缺失和异常数据"},
+      {"agent_id": "renewable_analyzer",   "action": "计算风电和光伏的月度容量因子和年度容量因子"},
+      {"agent_id": "renewable_analyzer",   "action": "统计弃风弃光电量，计算分时段弃电率"},
+      {"agent_id": "power_flow_analyzer",  "action": "分析电网消纳瓶颈，识别受限断面和时段"},
+      {"agent_id": "report_generator",     "action": "生成新能源消纳分析报告，提出提升消纳率的建议"}
+    ]
+  }
+]

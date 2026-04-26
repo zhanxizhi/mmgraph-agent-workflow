@@ -1,0 +1,5 @@
+scene ours_full pure_llm vector_rag graphrag_nomatch
+OPS 0.200 0.000 0.250 0.117
+KQA 0.450 0.000 0.615 0.025
+DA 0.237 0.000 0.410 0.025
+AVG 0.296 0.000 0.425 0.056

@@ -1,0 +1,60 @@
+\begin{tikzpicture}[
+    >=Stealth,
+    every node/.style={font=\scriptsize},
+    seed/.style={
+        circle, draw=blue!70!black, fill=blue!18,
+        line width=0.7pt, text width=2.0cm, align=center,
+        inner sep=2pt, minimum size=20mm,
+    },
+    ent/.style={
+        circle, draw=teal!70!black, fill=teal!12,
+        line width=0.5pt, text width=1.6cm, align=center,
+        inner sep=2pt, minimum size=14mm,
+    },
+    text2/.style={
+        rectangle, rounded corners=4pt,
+        draw=orange!75!black, fill=orange!10,
+        line width=0.4pt, text width=2.4cm, align=center,
+        inner sep=3pt, font=\tiny,
+    },
+    edge/.style={->, draw=black!55, line width=0.4pt},
+    legendbox/.style={
+        rectangle, draw=black!30, fill=white,
+        inner sep=4pt,
+    },
+]
+% 种子节点
+\node[seed] (seed) at (0,0) {\textbf{TextNode}\\\scriptsize NERC LL20231101\\\scriptsize 电流差动保护逻辑};
+
+% 1-hop 实体节点（围绕种子径向放置）
+\node[ent] (e1) at ( 70:3.4) {电流差动\\保护};
+\node[ent] (e2) at ( 25:3.4) {NERC\\LL20231101};
+\node[ent] (e3) at (-25:3.4) {fault};
+\node[ent] (e4) at (-70:3.4) {trip};
+\node[ent] (e5) at (-130:3.4) {间歇性\\退化信号};
+\node[ent] (e6) at ( 130:3.4) {230\,kV\\transmission};
+
+% 2-hop 文本节点
+\node[text2] (t1) at ($(e1.north) + (0,1.2)$) {方向比较闭锁\\保护中…};
+\node[text2] (t2) at ($(e3.east) + (1.4,0)$) {故障清除后\\电机重新加速…};
+\node[text2] (t3) at ($(e6.west) + (-1.4,0)$) {LL20231101\\手动替代值定义…};
+
+% 边：seed → 1-hop entities
+\foreach \e in {e1,e2,e3,e4,e5,e6} {
+    \draw[edge] (seed) -- (\e);
+}
+% 边：1-hop entity → 2-hop text
+\draw[edge] (e1) -- (t1);
+\draw[edge] (e3) -- (t2);
+\draw[edge] (e6) -- (t3);
+
+% 图例（散布节点 + 简单标签）
+\node[legendbox, anchor=north west, font=\tiny, text width=5.6cm,
+      align=left] at (-6.4,-4.2)
+{%
+\tikz[baseline=-0.6ex]\node[seed, minimum size=4mm, text width=0pt, inner sep=0pt]{};\ 种子文本节点（top-$k$ 检索） \\
+\tikz[baseline=-0.6ex]\node[ent,  minimum size=4mm, text width=0pt, inner sep=0pt]{};\ 1 跳实体节点（BFS 扩展） \\
+\tikz[baseline=-0.6ex]\node[text2, text width=4mm,  inner sep=1pt]{};\ \ 2 跳文本节点（BFS 扩展） \\
+\textcolor{black!55}{$\rightarrow$}\ REFERENCES 关系（实体引用源文档）%
+};
+\end{tikzpicture}

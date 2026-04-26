@@ -1,0 +1,5 @@
+baseline latency ci95
+Full 21.78 1.90
+Pure 9.34 1.06
+Vector 14.34 1.05
+NoMatch 19.08 1.08

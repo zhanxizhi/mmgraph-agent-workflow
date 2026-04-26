@@ -1,0 +1,44 @@
+\documentclass[thesis,biblatex]{template/hust}
+
+\addbibresource{ref.bib}
+\usepackage{macros}
+\usepackage{booktabs}
+\usetikzlibrary{arrows.meta,positioning,fit,shapes.geometric,calc,backgrounds}
+
+\title{基于多模态图检索增强的智能体工作流自主生成方法研究}
+
+\author{詹熙至}
+\school{计算机科学与技术}
+\classnum{大数据 2201}
+\stunum{U202215549}
+\instructor{莫益军}
+\date{2026年5月15日}
+
+\setlength{\headheight}{38pt}
+
+
+% 毕业论文模板
+\begin{document}
+    \maketitle                              % 封面
+    \newpage
+    \authorization                          % 原创页（不保密）
+
+    \pagenumbering{Roman}
+    \include{body/abstract-ch}              % 中文摘要
+    \include{body/abstract-en}              % 英文摘要
+    \tableofcontents                        % 目录
+    \newpage
+    \pagenumbering{arabic}
+    \include{body/introduction}             % 第一章 绪论
+    \include{body/related_works}            % 第二章 相关工作
+    \include{body/method}                   % 第三章 方法
+    \include{body/agent_match}              % 第四章 智能体匹配与工作流生成
+    \include{body/experiments}              % 第五章 实验与分析
+    \include{body/conclusion}               % 第六章 结论与展望
+
+    \include{body/references}               % 参考文献
+    % \appendix
+    % \include{body/appendices}
+    \include{body/acknowledgement}          % 致谢
+
+\end{document}

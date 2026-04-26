@@ -1,0 +1,5 @@
+config raa
+Full 0.296
+NoSubgraph 0.425
+NoMatch 0.056
+NoKG 0.000

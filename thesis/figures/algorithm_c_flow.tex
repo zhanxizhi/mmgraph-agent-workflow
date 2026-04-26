@@ -1,0 +1,44 @@
+\resizebox{0.96\textwidth}{!}{%
+\begin{tikzpicture}[
+    font=\small,
+    >=Stealth,
+    step/.style={rectangle, rounded corners=2pt, draw=#1!70!black, fill=#1!9, minimum width=2.35cm, minimum height=0.78cm, align=center, line width=0.55pt},
+    score/.style={rectangle, rounded corners=2pt, draw=#1!70!black, fill=#1!8, minimum width=2.08cm, minimum height=0.78cm, align=center, line width=0.5pt},
+    decision/.style={diamond, aspect=2.2, draw=orange!75!black, fill=orange!10, minimum width=2.2cm, minimum height=0.86cm, align=center, line width=0.55pt},
+    arrow/.style={->, line width=0.75pt, draw=black!70},
+    group/.style={rectangle, rounded corners=4pt, draw=black!35, fill=black!2, inner xsep=9pt, inner ysep=13pt}
+]
+
+\node[step=teal] (input) {任务 $T$\\图谱上下文 $ctx$};
+\node[step=cyan, right=0.85cm of input] (decompose) {LLM任务分解\\生成子任务集合};
+\node[step=blue, right=0.85cm of decompose] (subtask) {遍历子任务\\$st_i$};
+
+\node[score=violet, right=0.9cm of subtask, yshift=1.28cm] (cap) {能力嵌入\\相似度 $s_{cap}$};
+\node[score=violet, right=0.9cm of subtask] (tool) {工具覆盖率\\$s_{tool}$};
+\node[score=violet, right=0.9cm of subtask, yshift=-1.28cm] (io) {输入输出\\兼容性 $s_{io}$};
+
+\node[step=orange, right=1.05cm of tool] (weighted) {加权评分\\$\alpha s_{cap}+\beta s_{tool}+\gamma s_{io}$};
+\node[decision, right=0.95cm of weighted] (threshold) {是否低于\\回退阈值};
+\node[step=red, above right=0.62cm and 0.9cm of threshold] (fallback) {分配\\协调智能体};
+\node[step=green, below right=0.62cm and 0.9cm of threshold] (best) {选择最高分\\专用智能体};
+\node[step=green, right=3.25cm of threshold] (output) {匹配结果\\$(st_i,a_i^*,Score_i)$};
+
+\draw[arrow] (input) -- (decompose);
+\draw[arrow] (decompose) -- (subtask);
+\draw[arrow] (subtask.east) -- (cap.west);
+\draw[arrow] (subtask.east) -- (tool.west);
+\draw[arrow] (subtask.east) -- (io.west);
+\draw[arrow] (cap.east) -- (weighted.west);
+\draw[arrow] (tool.east) -- (weighted.west);
+\draw[arrow] (io.east) -- (weighted.west);
+\draw[arrow] (weighted) -- (threshold);
+\draw[arrow] (threshold) -- node[above, text=black!65] {是} (fallback);
+\draw[arrow] (threshold) -- node[below, text=black!65] {否} (best);
+\draw[arrow] (fallback.east) -- (output.west);
+\draw[arrow] (best.east) -- (output.west);
+
+\begin{scope}[on background layer]
+    \node[group, fit=(cap) (tool) (io), label={[font=\small, yshift=2pt]above:候选智能体三维评分}] {};
+\end{scope}
+\end{tikzpicture}%
+}

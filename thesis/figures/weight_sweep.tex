@@ -1,0 +1,63 @@
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.78\textwidth,
+    height=7.0cm,
+    xlabel={$\alpha$（能力嵌入相似度权重）},
+    ylabel={$\beta$（工具覆盖率权重）},
+    xmin=-0.06, xmax=1.06,
+    ymin=-0.06, ymax=1.06,
+    enlargelimits=false,
+    xtick={0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0},
+    ytick={0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0},
+    tick label style={font=\scriptsize},
+    label style={font=\small},
+    colormap/viridis,
+    colorbar,
+    colorbar style={
+        width=0.32cm,
+        ylabel={RAA},
+        ylabel style={font=\small},
+        ytick={0.1,0.15,0.2,0.25,0.3,0.35},
+        tick label style={font=\scriptsize},
+    },
+    legend style={
+        at={(0.5,-0.22)},
+        anchor=north,
+        legend columns=2,
+        font=\scriptsize,
+        draw=none,
+        column sep=10pt,
+    },
+    legend image post style={mark size=4pt},
+]
+\addplot+[
+    scatter,
+    only marks,
+    mark=square*,
+    mark size=8pt,
+    scatter src=explicit,
+    draw=none,
+    forget plot,
+] table [x=alpha, y=beta, meta=raa, header=true] {figures/data/weight_sweep.dat};
+
+% 默认权重 (0.5, 0.3, 0.2) — 论文采用值
+\addplot[
+    only marks,
+    mark=star,
+    mark size=5pt,
+    color=red!85!black,
+    line width=0.9pt,
+] coordinates {(0.5,0.3)};
+\addlegendentry{默认 $(\alpha,\beta,\gamma) = (0.5,0.3,0.2)$，RAA $=0.303$}
+
+% 最优区域代表 (0.1, 0.5, 0.4)
+\addplot[
+    only marks,
+    mark=triangle*,
+    mark size=5pt,
+    color=red!85!black,
+    line width=0.9pt,
+] coordinates {(0.1,0.5)};
+\addlegendentry{最优区代表 $(0.1,0.5,0.4)$，RAA $=0.348$}
+\end{axis}
+\end{tikzpicture}

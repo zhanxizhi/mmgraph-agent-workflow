@@ -1,0 +1,58 @@
+\resizebox{0.94\textwidth}{!}{%
+\begin{tikzpicture}[
+    font=\small,
+    >=Stealth,
+    node/.style={circle, draw=black!55, fill=black!5, minimum size=0.72cm, line width=0.5pt},
+    seed/.style={circle, draw=blue!70!black, fill=blue!18, minimum size=0.82cm, line width=0.8pt},
+    hopone/.style={circle, draw=teal!70!black, fill=teal!14, minimum size=0.72cm, line width=0.6pt},
+    hoptwo/.style={circle, draw=orange!80!black, fill=orange!14, minimum size=0.72cm, line width=0.6pt},
+    kept/.style={rectangle, rounded corners=2pt, draw=green!55!black, fill=green!10, minimum width=1.9cm, minimum height=0.65cm, align=center},
+    proc/.style={rectangle, rounded corners=2pt, draw=#1!70!black, fill=#1!10, minimum width=2.35cm, minimum height=0.78cm, align=center},
+    arrow/.style={->, line width=0.75pt, draw=black!70},
+    edge/.style={line width=0.55pt, draw=black!45}
+]
+
+\node[proc=cyan] (query) at (-4.2, 0) {用户查询 $q$\\BGE-M3编码};
+
+\node[seed] (s1) at (-0.8, 0.65) {$s_1$};
+\node[seed] (s2) at (-0.6, -0.75) {$s_2$};
+\node[hopone] (a) at (0.75, 1.45) {};
+\node[hopone] (b) at (0.95, 0.2) {};
+\node[hopone] (c) at (0.65, -1.55) {};
+\node[hoptwo] (d) at (2.15, 1.75) {};
+\node[hoptwo] (e) at (2.45, 0.55) {};
+\node[hoptwo] (f) at (2.25, -0.85) {};
+\node[hoptwo] (g) at (1.8, -2.0) {};
+\node[node] (noise) at (3.25, 2.55) {};
+
+\draw[edge] (s1) -- (a);
+\draw[edge] (s1) -- (b);
+\draw[edge] (s2) -- (b);
+\draw[edge] (s2) -- (c);
+\draw[edge] (a) -- (d);
+\draw[edge] (b) -- (e);
+\draw[edge] (b) -- (f);
+\draw[edge] (c) -- (f);
+\draw[edge] (c) -- (g);
+\draw[edge, dashed] (d) -- (noise);
+
+\node[proc=blue, above=0.85cm of s1] (seedlabel) {Top-$k$ 种子节点\\$k=5$};
+\node[proc=orange] (bfslabel) at (2.15, -2.9) {BFS子图扩展\\$h=2$};
+\node[proc=violet, right=1.2cm of e] (rerank) {LLM重排序\\过滤低相关节点};
+\node[kept, right=0.95cm of rerank] (ctx1) {节点列表};
+\node[kept, below=0.18cm of ctx1] (ctx2) {关系列表};
+\node[proc=green, right=0.95cm of ctx1, yshift=-0.41cm] (ctx) {结构化图谱上下文\\输入工作流生成};
+
+\draw[arrow] (query) -- node[above, text=black!65] {向量检索} (s1);
+\draw[arrow] (query) -- (s2);
+\draw[arrow] (seedlabel.south) -- (s1.north);
+\draw[arrow] (bfslabel.north) -- (g.south);
+\draw[arrow] (e) -- (rerank.west);
+\draw[arrow] (rerank) -- (ctx1);
+\draw[arrow] (rerank) -- (ctx2);
+\draw[arrow] (ctx1) -- (ctx);
+\draw[arrow] (ctx2) -- (ctx);
+
+\node[draw=blue!70!black, fill=blue!10, rounded corners=2pt, align=left, below=0.4cm of query, minimum width=2.7cm] (legend) {图例：\\\textcolor{blue!70!black}{●} 种子节点\\\textcolor{teal!70!black}{●} 一跳邻居\\\textcolor{orange!80!black}{●} 二跳邻居};
+\end{tikzpicture}%
+}

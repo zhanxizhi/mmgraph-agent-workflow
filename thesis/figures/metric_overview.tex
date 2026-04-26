@@ -1,0 +1,27 @@
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    width=\textwidth,
+    height=6.0cm,
+    ymin=0,
+    ymax=1.08,
+    bar width=7pt,
+    enlarge x limits=0.18,
+    ylabel={指标均值},
+    symbolic x coords={Exec,SC,RAA,Logic},
+    xtick=data,
+    ymajorgrids=true,
+    grid style={draw=black!12},
+    tick label style={font=\small},
+    label style={font=\small},
+    legend style={at={(0.5,-0.18)}, anchor=north, legend columns=2, font=\small, draw=none},
+    nodes near coords,
+    every node near coord/.append style={font=\scriptsize, rotate=90, anchor=west},
+]
+\addplot+[fill=blue!35, draw=blue!70!black] table[x=metric,y=ours_full] {figures/data/metric_overview.dat};
+\addplot+[fill=gray!30, draw=gray!70!black] table[x=metric,y=pure_llm] {figures/data/metric_overview.dat};
+\addplot+[fill=teal!35, draw=teal!70!black] table[x=metric,y=vector_rag] {figures/data/metric_overview.dat};
+\addplot+[fill=orange!40, draw=orange!80!black] table[x=metric,y=graphrag_nomatch] {figures/data/metric_overview.dat};
+\legend{ours\_full, pure\_llm, vector\_rag, graphrag\_nomatch}
+\end{axis}
+\end{tikzpicture}

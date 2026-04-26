@@ -1,0 +1,215 @@
+\section{智能体匹配与工作流生成方法}
+
+本章介绍本研究的后两项核心方法：子任务-智能体混合匹配算法（算法C）和工作流DAG编排与验证机制（算法D），并阐述系统整体架构。算法C解决了"将分解后的子任务准确映射到最优专用智能体"的核心难题，算法D负责将匹配结果编排为可执行的有向无环图工作流并保证其正确性。
+
+\subsection{子任务分解与智能体特征图}
+
+\subsubsection{任务分解方法}
+
+给定用户任务描述 $T$ 和GraphRAG检索到的领域上下文 $ctx$，首先通过LLM将任务分解为若干子任务 $\{st_1, st_2, \ldots, st_n\}$，每个子任务 $st_i$ 包含以下属性：子任务标识符（id）、描述（description）、所需能力列表（required\_capabilities）、所需工具列表（required\_tools）、输入类型（input\_type）、输出类型（output\_type）以及依赖关系（depends\_on）。
+
+分解提示词（Decomposition Prompt）设计为：将原始任务、领域上下文和子任务JSON Schema作为输入，要求LLM输出结构化的子任务列表，并明确各子任务间的数据依赖关系。依赖关系以 depends\_on 字段记录前驱子任务的 id 列表，为后续DAG构建提供基础。
+
+\subsubsection{智能体特征图定义}
+
+智能体特征图（Agent Feature Graph，AFG）是本研究对多智能体系统中智能体能力的形式化表示。AFG 以异构有向图 $\mathcal{F} = (\mathcal{A} \cup \mathcal{V}_C \cup \mathcal{V}_T,\ \mathcal{E}_{cap} \cup \mathcal{E}_{tool})$ 表示，其中：
+\begin{itemize}
+    \item 智能体节点集 $\mathcal{A} = \{a_1, a_2, \ldots, a_m\}$ 表示可用专用智能体；
+    \item 能力节点集 $\mathcal{V}_C = \bigcup_{a_i \in \mathcal{A}} \text{capabilities}(a_i)$ 由所有智能体声明能力的并集构成；
+    \item 工具节点集 $\mathcal{V}_T = \bigcup_{a_i \in \mathcal{A}} \text{tools}(a_i)$ 由所有智能体可用工具的并集构成；
+    \item 有向边 $\mathcal{E}_{cap} = \{(a_i, c) \mid c \in \text{capabilities}(a_i)\}$ 表示\emph{HAS\_CAPABILITY} 关系，连接智能体到其声明能力；
+    \item 有向边 $\mathcal{E}_{tool} = \{(a_i, t) \mid t \in \text{tools}(a_i)\}$ 表示\emph{USES\_TOOL} 关系，连接智能体到其可用工具。
+\end{itemize}
+该异构结构与算法 A 构建的领域知识图谱共享 Neo4j 数据库存储（具体节点标签 \texttt{AgentNode}/\texttt{CapabilityNode}/\texttt{ToolNode} 与边类型 \texttt{HAS\_CAPABILITY}/\texttt{USES\_TOOL}），便于在算法 C 的能力嵌入相似度计算中直接复用领域图谱已建立的 BGE-M3 向量索引。
+
+每个智能体 $a_i$ 具有以下属性：智能体标识符（id）、描述（description）、能力列表（capabilities）、工具列表（tools）、输入Schema（input\_schema）和输出Schema（output\_schema）。能力和工具均以自然语言描述，并通过BGE-M3嵌入为语义向量，存储为 $\mathbf{e}_{a_i} \in \mathbb{R}^{1024}$。
+
+在电力系统场景中，本研究定义了七类专用智能体：故障诊断智能体（FaultDiagnosisAgent）、保护定值校验智能体（ProtectionAgent）、数据分析智能体（DataAnalysisAgent）、知识检索智能体（KnowledgeRetrievalAgent）、文档生成智能体（DocGenerationAgent）、可视化智能体（VisualizationAgent）以及通用协调智能体（OrchestratorAgent），共同覆盖电力运维的主要任务场景。
+
+\subsection{子任务-智能体混合匹配算法}
+
+\subsubsection{三维评分函数设计}
+
+针对每对（子任务 $st_i$，智能体 $a_j$），算法C从三个维度计算匹配分数，加权求和得到综合评分 $\text{Score}(st_i, a_j)$：
+
+\begin{equation}
+\text{Score}(st_i, a_j) = \alpha \cdot s_{\text{cap}} + \beta \cdot s_{\text{tool}} + \gamma \cdot s_{\text{io}}
+\end{equation}
+
+其中 $\alpha, \beta, \gamma$ 为权重超参数，满足 $\alpha + \beta + \gamma = 1$；$s_{\text{cap}}$、$s_{\text{tool}}$、$s_{\text{io}}$ 分别为能力嵌入相似度、工具覆盖率和输入输出兼容性三个分量。
+
+\textbf{（1）能力嵌入相似度 $s_{\text{cap}}$。}将子任务描述和所需能力列表拼接为能力查询向量 $\mathbf{q}_{st_i}$，与智能体能力描述嵌入向量 $\mathbf{e}_{a_j}$ 计算余弦相似度：
+
+\begin{equation}
+s_{\text{cap}}(st_i, a_j) = \text{cosine}\left(\mathcal{E}(st_i.\text{description} + \text{ } st_i.\text{required\_caps}),\ \mathbf{e}_{a_j}\right)
+\end{equation}
+
+能力嵌入相似度从语义层面衡量子任务需求与智能体能力的匹配程度，捕捉表述不同但语义相近的能力描述之间的对应关系。
+
+\textbf{（2）工具覆盖率 $s_{\text{tool}}$。}工具覆盖率衡量智能体所拥有的工具是否满足子任务的工具需求：
+
+\begin{equation}
+s_{\text{tool}}(st_i, a_j) = \frac{|\text{Required\_Tools}(st_i) \cap \text{Tools}(a_j)|}{|\text{Required\_Tools}(st_i)| + \epsilon}
+\end{equation}
+
+其中 $\epsilon$ 为防除零的平滑项。当子任务不需要特定工具时（Required\_Tools为空），$s_{\text{tool}}$ 取默认值1.0。此外，设定工具覆盖率软约束阈值 $\tau_{\text{tool}}$，当 $s_{\text{tool}} < \tau_{\text{tool}}$ 时将该智能体标记为次优候选，在最终排序中降权处理（实验中 $\tau_{\text{tool}}=0.0$ 以保证候选多样性）。
+
+\textbf{（3）输入输出兼容性 $s_{\text{io}}$。}$s_{\text{io}}$ 通过对子任务声明的输入/输出类型与智能体 Schema 字段名进行双向子串匹配来度量接口契合度。给定一个数据类型描述 $d$ 和 Schema $S$，定义单边匹配函数：
+
+\begin{equation}
+\mu(d, S) = \begin{cases}
+1.0 & \exists\, k \in \mathrm{keys}(S):\ d \sqsubseteq k \ \lor\ k \sqsubseteq d \\
+0.5 & \text{否则}
+\end{cases}
+\end{equation}
+
+其中 $\sqsubseteq$ 表示不区分大小写的子串包含关系。$s_{\text{io}}$ 由输入侧与输出侧的单边匹配取均值得到：
+
+\begin{equation}
+s_{\text{io}}(st_i, a_j) = \tfrac{1}{2}\bigl[\mu(st_i.\text{input\_type},\ a_j.\text{input\_schema}) + \mu(st_i.\text{output\_type},\ a_j.\text{output\_schema})\bigr]
+\end{equation}
+
+设计上，未在 Schema 中找到对应字段时给予 0.5 的中等分而非 0 分，避免接口描述空缺导致候选智能体被过早淘汰；当字段存在双向子串匹配时给予满分，体现"声明的类型与目标 Schema 至少存在词汇层重叠"的兼容性证据。该方案是面向工程实现的轻量替代——基于 LLM 的三级语义评分版本能够进一步识别"JSON 结构化"与"自然语言文本"等跨表示冲突，但会在每对（子任务，智能体）匹配中引入约 0.5 秒额外延迟，导致算法 C 的端到端开销随智能体规模线性放大，因此本研究保留 LLM 版本作为未来工作（详见 6.2 节局限性 (5)）。
+
+\subsubsection{最优智能体选择}
+
+对每个子任务 $st_i$，遍历所有非通用智能体候选 $a_j \in \mathcal{A}$，计算三维综合评分，选择得分最高的智能体作为最优匹配：
+
+\begin{equation}
+a_i^* = \arg\max_{a_j \in \mathcal{A}} \text{Score}(st_i, a_j)
+\end{equation}
+
+若所有候选智能体的最高综合评分均低于绝对阈值 $\tau_{\text{abs}}$（实验设为0.2），则分配通用协调智能体（OrchestratorAgent）作为回退选项，保证每个子任务均有智能体承接。
+
+最终，算法C为每个子任务输出三元组 $(st_i, a_i^*, \text{Score}_i)$，记录子任务、最优智能体和匹配分数，传递给算法D进行工作流编排。
+
+\subsubsection{算法C的流程描述}
+
+算法C的输入包括原始任务 $T$、GraphRAG检索得到的领域上下文 $ctx$、智能体特征图 $\mathcal{F}$ 以及权重参数 $(\alpha,\beta,\gamma)$，输出为子任务到智能体的匹配结果集合 $\mathcal{R}$。其核心思想是将LLM的开放式任务分解与可计算的三维匹配函数结合起来：首先利用 $ctx$ 约束LLM生成结构化子任务集合，降低分解结果脱离电力领域知识的风险；随后对每个子任务遍历候选智能体，分别计算能力嵌入相似度、工具覆盖率和输入输出兼容性；最后按照加权综合评分选择最优智能体，并在所有候选均低于阈值时回退到通用协调智能体。
+
+因此，算法C既保留了LLM对复杂任务的语义拆解能力，又通过显式评分函数避免了角色分配完全依赖LLM自由生成的问题。图\ref{fig:algorithm_c_flow}给出了算法C的流程化表示，算法\ref{alg:matching}给出了对应伪代码。
+
+\begin{figure}[H]
+\centering
+\input{figures/algorithm_c_flow.tex}
+\caption{子任务-智能体混合匹配流程图}
+\label{fig:algorithm_c_flow}
+\end{figure}
+
+\begin{algorithm}[H]
+\caption{子任务-智能体混合匹配算法（算法C）}
+\label{alg:matching}
+\begin{algorithmic}[1]
+\Require 任务 $T$，领域上下文 $ctx$，智能体特征图 $\mathcal{F}$，权重 $(\alpha, \beta, \gamma)$
+\Ensure 匹配结果列表 $\{(st_i, a_i^*, \mathrm{Score}_i)\}$
+\State 子任务分解：$\{st_1, \ldots, st_n\} \gets \mathrm{LLM\_Decompose}(T, ctx)$
+\State 初始化结果列表 $\mathcal{R} \gets [\,]$
+\ForAll{子任务 $st_i$}
+    \State 初始化 $\mathrm{best\_score} \gets 0$，$\mathrm{best\_agent} \gets \mathrm{None}$
+    \ForAll{智能体 $a_j \in \mathcal{A}$，$a_j \neq \mathrm{OrchestratorAgent}$}
+        \State $s_{\mathrm{cap}} \gets \mathrm{cosine}(\mathcal{E}(st_i),\, \mathbf{e}_{a_j})$
+        \State $s_{\mathrm{tool}} \gets |\mathrm{Req}(st_i) \cap \mathrm{Tools}(a_j)|\,/\,(|\mathrm{Req}(st_i)| + \epsilon)$
+        \State $s_{\mathrm{io}} \gets \mathrm{IOMatch}(st_i, a_j)$
+        \State $\mathrm{score} \gets \alpha \cdot s_{\mathrm{cap}} + \beta \cdot s_{\mathrm{tool}} + \gamma \cdot s_{\mathrm{io}}$
+        \If{$\mathrm{score} > \mathrm{best\_score}$}
+            \State $\mathrm{best\_score} \gets \mathrm{score}$；$\mathrm{best\_agent} \gets a_j$
+        \EndIf
+    \EndFor
+    \If{$\mathrm{best\_score} < \tau_{\mathrm{abs}}$}
+        \State $\mathrm{best\_agent} \gets \mathrm{OrchestratorAgent}$
+    \EndIf
+    \State $\mathcal{R} \gets \mathcal{R} \cup \{(st_i, \mathrm{best\_agent}, \mathrm{best\_score})\}$
+\EndFor
+\State \textbf{return} $\mathcal{R}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{工作流DAG编排与验证机制}
+
+\subsubsection{DAG构建方法}
+
+基于算法C的匹配结果 $\{(st_i, a_i^*, \text{Score}_i)\}$，算法D构建工作流有向无环图（Directed Acyclic Graph，DAG）。DAG中每个节点对应一个工作流步骤（WorkflowStep），节点属性包括步骤标识符（step\_id）、智能体标识符（agent\_id）、执行动作描述（action）、输入参数（inputs）以及依赖前驱步骤列表（depends\_on）。
+
+依赖关系的确定依赖两个来源：一是子任务分解时的显式数据流依赖（depends\_on字段）；二是LLM对隐式数据流的推断。对于显式依赖未能覆盖的情况，利用LLM分析每对步骤间是否存在数据传递关系（即步骤 $i$ 的输出是否为步骤 $j$ 的输入），若存在则在DAG中添加有向边 $i \rightarrow j$。
+
+\subsubsection{算法D的流程描述}
+
+算法D的输入为算法C输出的匹配结果集合 $\mathcal{R}=\{(st_i,a_i^*,\text{Score}_i)\}$、原始任务 $T$ 以及子任务分解阶段得到的显式依赖集合 $\mathcal{D}_{exp}$，输出为经过验证的工作流DAG及其可部署导出结果。算法D首先把每个匹配三元组转换为一个工作流节点，并保留子任务描述、执行智能体、输入输出约束和匹配置信度等属性；然后结合显式依赖与LLM推断得到的隐式数据流依赖构造有向边集合，形成初始DAG。
+
+在初始图生成后，算法D进入“验证--修复”循环：若图结构存在环路，则删除或重排导致环路的依赖边；若相邻节点的输入输出Schema不兼容，则插入类型转换步骤或调整智能体分配；若工作流未完整覆盖原始任务目标，则追加缺失步骤并重新连接依赖关系。只有当结构、接口和语义三类约束全部满足后，算法D才导出Mermaid图、BPMN 2.0定义和LangGraph代码。图\ref{fig:algorithm_d_flow}给出了算法D的流程化表示，算法\ref{alg:dag_validation}给出了对应伪代码。
+
+\begin{figure}[H]
+\centering
+\input{figures/algorithm_d_flow.tex}
+\caption{工作流DAG编排与三层验证流程图}
+\label{fig:algorithm_d_flow}
+\end{figure}
+
+\begin{algorithm}[H]
+\caption{工作流DAG编排与三层验证算法（算法D）}
+\label{alg:dag_validation}
+\begin{algorithmic}[1]
+\Require 匹配结果 $\mathcal{R}$，原始任务 $T$，显式依赖集合 $\mathcal{D}_{exp}$
+\Ensure 验证后的工作流DAG $G=(V,E)$，导出结果 $\mathcal{O}$
+\State $V \gets \mathrm{BuildWorkflowSteps}(\mathcal{R})$
+\State $E \gets \mathcal{D}_{exp}$
+\ForAll{工作流节点对 $(v_i, v_j)$}
+    \If{$\mathrm{LLM\_DataFlow}(v_i, v_j)=1$}
+        \State $E \gets E \cup \{(v_i, v_j)\}$
+    \EndIf
+\EndFor
+\State $G \gets (V,E)$，$\mathrm{valid} \gets \mathrm{false}$
+\While{$\mathrm{valid} = \mathrm{false}$}
+    \If{$\mathrm{HasCycle}(G)$}
+        \State $G \gets \mathrm{RepairCycle}(G)$
+    \ElsIf{$\neg \mathrm{IOCompatible}(G)$}
+        \State $G \gets \mathrm{RepairInterface}(G)$
+    \ElsIf{$\neg \mathrm{TaskComplete}(G,T)$}
+        \State $G \gets \mathrm{RepairCoverage}(G,T)$
+    \Else
+        \State $\mathrm{valid} \gets \mathrm{true}$
+    \EndIf
+\EndWhile
+\State $\mathcal{O} \gets \mathrm{Export}(G,\{\mathrm{Mermaid}, \mathrm{BPMN}, \mathrm{LangGraph}\})$
+\State \textbf{return} $G,\mathcal{O}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{三层验证机制}
+
+为保证生成工作流的正确性和可执行性，设计三层渐进式验证机制：
+
+\textbf{第一层：DAG无环性验证（结构验证）。}利用拓扑排序算法（Kahn算法）检测工作流图中是否存在循环依赖。若检测到环路（如步骤A依赖步骤B，步骤B又依赖步骤A），则定位并删除引入环路的边，直至工作流成为合法DAG。此层验证保证工作流可被线性调度执行，是可执行性的基础保障。
+
+\textbf{第二层：输入输出兼容性验证（接口验证）。}对DAG中每条有向边 $i \rightarrow j$，验证步骤 $i$（由智能体 $a_i^*$ 执行）的输出Schema是否与步骤 $j$（由智能体 $a_j^*$ 执行）的输入Schema兼容。若存在类型不匹配，通过插入类型转换步骤（Type Adapter）或调整智能体分配来修复接口冲突。
+
+\textbf{第三层：任务完整性验证（语义验证）。}对比原始任务描述 $T$ 与工作流步骤集合，由LLM判断工作流是否完整覆盖任务的所有关键目标。若存在任务目标遗漏，则追加对应工作流步骤，确保生成工作流的语义完整性。
+
+\subsubsection{工作流格式导出}
+
+完成验证后，算法D支持将工作流导出为三种标准格式：
+
+（1）\textbf{Mermaid图}：以 flowchart TD 语法生成人类可读的流程图定义，可在Markdown文档中直接渲染；
+
+（2）\textbf{BPMN 2.0}：以XML格式导出符合业务流程模型与标记法（Business Process Model and Notation）标准的工作流定义，支持主流BPMN工具（如Camunda、Activiti）解析执行；
+
+（3）\textbf{LangGraph代码}：生成基于LangGraph框架的Python代码，可直接部署执行，每个工作流步骤对应一个LangGraph节点，依赖关系对应图边。
+
+\subsection{系统整体架构}
+
+图\ref{fig:system_architecture}展示了多模态GraphRAG驱动的智能体工作流自主生成系统的整体架构。系统分为离线构建阶段和在线生成阶段。
+
+\begin{figure}[htbp]
+\centering
+\input{figures/system_architecture.tex}
+\caption{多模态GraphRAG驱动的智能体工作流生成系统架构}
+\label{fig:system_architecture}
+\end{figure}
+
+离线构建阶段：通过多模态文档解析流水线（算法A）处理电力领域文档，构建多模态知识图谱并写入Neo4j，建立向量索引，同时初始化智能体特征图。该阶段一次构建，多次复用。
+
+在线生成阶段：接收用户任务描述后，经GraphRAG检索（算法B）获取领域上下文，随后通过子任务-智能体匹配（算法C）完成任务分解和角色分配，最终由DAG编排与验证（算法D）生成可执行工作流并导出。整个在线流程无需人工干预，30 任务全量评测中平均端到端延迟约为 9 至 22 秒（依基线配置、任务复杂度和 LLM 响应速度而定，详见第五章实验）。
+
+\subsection{本章小结}
+
+本章详细阐述了子任务-智能体混合匹配算法（算法C）和工作流DAG编排与验证机制（算法D）。算法C通过能力嵌入相似度、工具覆盖率和输入输出兼容性三维加权评分，系统化地将分解后的子任务映射到最优专用智能体，从根本上解决了角色分配随机性问题；算法D基于LLM推断数据流依赖，构建工作流DAG，并通过DAG无环性、接口兼容性和任务完整性三层验证保证工作流质量，支持Mermaid、BPMN 2.0和LangGraph三种格式导出。结合第三章的算法A和B，四项核心算法共同构成完整的智能体工作流自主生成方法体系。第五章将对所提方法在电力系统真实场景中的有效性进行全面实验评估。

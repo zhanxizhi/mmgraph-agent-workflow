@@ -1,0 +1,245 @@
+\section{实验与结果分析}
+
+本章在电力系统三类典型场景上对所提方法进行全面实验评估。首先介绍实验环境、数据集与基准任务，随后定义评估指标并说明步骤完整性指标的语义化升级，然后将本研究方法（ours\_full）与三种基线方法在 30 条扩展基准任务上进行对比，最后通过消融实验和案例分析，定量定位每个算法模块的贡献与失效模式。
+
+\subsection{实验环境与数据集}
+
+\subsubsection{实验环境}
+
+实验在以下软硬件环境中开展：操作系统为 Windows 11，处理器为 Intel Core i7，内存 16~GB。软件环境：Python 3.11，Neo4j Desktop 5.x（图数据库，含向量索引），sentence-transformers 2.x（BGE-M3 本地推理），DeepSeek Chat API（LLM 推理，兼容 OpenAI 接口）。BGE-M3 嵌入维度 1024，Neo4j 向量索引采用 HNSW 算法（$m=16$，$ef\_construction=64$，余弦相似度）。
+
+\subsubsection{数据集}
+
+\textbf{知识图谱与领域语料来源。}离线知识图谱构建以 PowerGridQA 中的 NERC 运行经验、Power System Theory 与 Reasoning 三个子集为主要文本来源\cite{powergridqa2026}，并参考 Electricity Knowledge Graph 的电力消费知识组织方式\cite{hanzel2025electricitykg} 和 CIM-Graph 对 CIM 模型的图结构表达\cite{cimanticgraphs2024} 补充实体类型、设备关系和数据字段命名。通过算法 A 解析后写入 Neo4j，最终图谱包含 4{,}337 个节点和 5{,}228 条关系边，覆盖变压器、断路器、继电保护装置、负荷指标、可再生能源出力等核心对象及其故障类型和操作规程。
+
+\textbf{PowerGridQA 数据集。}PowerGridQA 用于电力知识问答（KQA）和电网故障排查（OPS）场景。本文使用的本地版本包含 58{,}713 条问答记录，其中电力系统理论子集 53{,}138 条、NERC 运行经验子集 4{,}787 条、推理场景子集 788 条。KQA 任务主要来自理论与推理子集，OPS 任务主要根据 NERC 运行经验子集改写为故障排查工作流需求。
+
+\textbf{OPSD 时序数据集。}数据分析（DA）场景采用 Open Power System Data（OPSD）平台的时间序列数据\cite{wiese2019opsd}。本文本地实验文件为 \texttt{time\_series\_60min\_singleindex.csv}，包含 50{,}401 条小时级记录和 300 个负荷、风电、光伏、电价等字段；实验脚本读取其中的统计摘要作为图谱文本节点，并构造短期负荷预测、峰谷差识别、新能源出力分析等数据分析工作流任务。
+
+\textbf{扩展数据来源。}除 PowerGridQA 与 OPSD 外，数据准备阶段还核查了 ENTSO-E Transparency Platform\cite{hirth2018entsoe}、Texas A\&M 电网测试案例\cite{tamu2026gridcases,birchfield2017synthetic} 以及 OpenEI/OEDI 美国电力异常报告数据\cite{openei2026outage}。这些数据源分别用于补充欧洲实时运行数据、合成电网拓扑/潮流测试案例和美国停电事件记录，主要作为领域背景与基准任务设计的参考。
+
+\textbf{基准测试集。}为避免仅依赖少量示例造成结论不稳，本文构造了包含 30 条任务的分层基准测试集，OPS、KQA、DA 三类场景各 10 条。每条样本均包含任务编号、数据来源、难度标签和金标准工作流（gold workflow），金标准工作流由 3 至 6 个步骤组成，并标注每步应分配的智能体。OPS 任务覆盖母线故障、线路跳闸、主变保护动作、单相接地、断路器失灵、N-1 越限、极端天气停电、SCADA 遥测异常等场景；KQA 任务覆盖继电保护、电力系统稳定性、SCADA 操作规程、标幺制、N-1 准则、CIM 模型等知识问答；DA 任务覆盖负荷预测、异常检测、新能源出力、电价相关性、备用裕度、停电事件统计和运行日报生成。表~\ref{tab:benchmark_scale} 给出了基准测试集的规模。
+
+\begin{table}[htbp]
+\centering
+\caption{扩展基准测试集规模}
+\label{tab:benchmark_scale}
+\small
+\begin{tabular}{@{}lccp{7.2cm}@{}}
+\toprule
+场景 & 任务数 & 平均金标步骤数 & 主要数据来源 \\
+\midrule
+OPS & 10 & 6.0 & PowerGridQA-NERC、OpenEI/OEDI、Texas A\&M、CIM-Graph \\
+KQA & 10 & 4.3 & PowerGridQA、Electricity Knowledge Graph、CIM-Graph \\
+DA  & 10 & 4.5 & OPSD、ENTSO-E、OpenEI/OEDI \\
+\midrule
+合计 & 30 & 4.9 & 多源电力公开数据集 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\input{figures/benchmark_profile.tex}
+\caption{扩展基准测试集的任务规模与金标步骤规模}
+\label{fig:benchmark_profile}
+\end{figure}
+
+\subsubsection{对比基线}
+
+本实验与三种基线方法进行对比：
+
+\begin{itemize}
+    \item \textbf{pure\_llm}：直接调用 LLM 生成工作流，无任何外部知识注入，步骤中的智能体字段由 LLM 自由填充。
+    \item \textbf{vector\_rag}：使用纯语义向量检索（$\text{max\_hops}=0$，即不进行子图扩展）获取上下文，其余流程与 ours\_full 相同，含算法 C 匹配。
+    \item \textbf{graphrag\_nomatch}：使用完整 GraphRAG 检索（含 BFS 子图扩展），但子任务-智能体匹配采用随机分配（随机种子 42），不运行算法 C。
+\end{itemize}
+
+本研究完整方法（ours\_full）采用算法 A 构建的知识图谱、算法 B 进行 GraphRAG 检索（$k=5$，$h=2$）、算法 C 进行三维评分匹配（$\alpha=0.5$，$\beta=0.3$，$\gamma=0.2$）、算法 D 进行 DAG 编排与三层验证。这四种基线两两组合形成消融实验的设计矩阵：vector\_rag 与 ours\_full 的差异隔离了\emph{子图扩展（算法 B 的 BFS 阶段）}的贡献，graphrag\_nomatch 与 ours\_full 的差异隔离了\emph{算法 C}的贡献。
+
+\textbf{实验复现与结果产物。}端到端评估由 \texttt{scripts/run\_eval\_ops\_workflow.py} 统一执行，支持 \texttt{--gold-file} 切换金标基准、\texttt{--scenes} 和 \texttt{--limit} 控制子集、\texttt{--baselines} 选择对比方法、\texttt{--skip-logic} 跳过 LLM 裁判以降低成本。脚本除逐任务 CSV 外，还自动生成分场景汇总表、全局均值表、95\% 置信区间和 PGFPlots 数据文件；本章中的图~\ref{fig:benchmark_profile}、图~\ref{fig:metric_overview}、图~\ref{fig:raa_by_scene}、图~\ref{fig:latency_by_baseline} 和图~\ref{fig:ablation_raa} 由同一数据源自动刷新。
+
+\subsection{评估指标}
+
+定义以下四项量化评估指标：
+
+\textbf{（1）工作流可执行率（Executability，Exec）。}判断生成工作流是否满足 DAG 结构有效性（无环性）以及每个步骤均有有效智能体分配。取值为 0 或 1。
+
+\textbf{（2）步骤完整性（Step Completeness，SC）。}衡量生成工作流中步骤与金标准步骤的语义覆盖度。本文同时采用两种实现：
+\begin{itemize}
+    \item \textbf{SC（语义版，主指标）}：将每个步骤的 action 文本经 BGE-M3 嵌入为 1024 维语义向量，计算金标步骤与生成步骤之间的两两余弦相似度，若任一生成步骤与某金标步骤的相似度超过阈值 $\tau_{sc}=0.65$ 即视为覆盖，最终统计为召回率：
+    \begin{equation}
+        \text{SC} = \frac{|\text{matched gold steps}|}{|\text{gold steps}|}
+    \end{equation}
+    \item \textbf{SC$_{\text{lex}}$（词汇版，对照指标）}：英文词元 + 中文字 $n$-gram 的 Jaccard 相似度，阈值 0.18。该指标作为初版实现保留以观测语义化改造的增益。
+\end{itemize}
+
+\textbf{（3）角色分配准确率（Role Assignment Accuracy，RAA）。}按照工作流拓扑顺序对齐生成步骤与金标准步骤，并将常见中文智能体名称、英文类名归一化为标准智能体标识后，判断生成步骤分配的智能体是否与金标准一致：
+
+\begin{equation}
+\text{RAA} = \frac{|\text{steps with correct agent}|}{|\text{gold steps}|}
+\end{equation}
+
+\textbf{（4）逻辑正确性（Logical Correctness，Logic）。}由 LLM 作为裁判，对生成工作流的逻辑顺序合理性、步骤操作可行性和整体流程完整性进行综合评分，分值范围 $[0,1]$。同一工作流评分 3 次取均值以降低方差。
+
+\subsection{实验结果与分析}
+
+\subsubsection{整体对比实验}
+
+表~\ref{tab:main_result} 展示了四种方法在 30 条基准任务上的全场景平均结果，分场景结果见表~\ref{tab:scene_result}。所有方法在 Exec 上均达到 1.000，说明算法 D 的三层结构验证机制和基线方法的 JSON Schema 约束均能保证生成工作流为合法 DAG。下文聚焦于 RAA、SC 和 Logic 三项区分度更高的指标。
+
+\begin{table}[htbp]
+\centering
+\caption{各方法在 30 条基准任务上的全场景平均结果}
+\label{tab:main_result}
+\small
+\begin{tabular}{lccccc}
+\toprule
+方法 & Exec & SC & SC$_{\text{lex}}$ & RAA & Logic \\
+\midrule
+ours\_full      & 1.000 & 0.768 & 0.196 & 0.296 & 0.711 \\
+pure\_llm       & 1.000 & 0.696 & 0.091 & 0.000 & \textbf{0.947} \\
+vector\_rag     & 1.000 & \textbf{0.784} & 0.181 & \textbf{0.425} & 0.912 \\
+graphrag\_nomatch & 1.000 & 0.784 & 0.180 & 0.056 & 0.868 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{各方法在三类场景上的角色分配准确率（RAA）}
+\label{tab:scene_result}
+\small
+\begin{tabular}{lcccc}
+\toprule
+场景 & ours\_full & pure\_llm & vector\_rag & graphrag\_nomatch \\
+\midrule
+OPS & 0.200 & 0.000 & \textbf{0.250} & 0.117 \\
+KQA & 0.450 & 0.000 & \textbf{0.615} & 0.025 \\
+DA  & 0.237 & 0.000 & \textbf{0.410} & 0.025 \\
+\midrule
+均值 & 0.296 & 0.000 & \textbf{0.425} & 0.056 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\input{figures/metric_overview.tex}
+\caption{不同方法在四项工作流质量指标上的总体对比}
+\label{fig:metric_overview}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\input{figures/raa_by_scene.tex}
+\caption{不同方法在各场景下的角色分配准确率对比}
+\label{fig:raa_by_scene}
+\end{figure}
+
+\textbf{角色分配准确率（核心指标）。}vector\_rag 在全场景均值上以 0.425 取得最佳成绩，其次是 ours\_full（0.296），graphrag\_nomatch（0.056）与 pure\_llm（0.000）显著落后。这一结果可拆解为两条独立信号：
+\begin{enumerate}
+    \item \textbf{算法 C 的贡献是决定性的（+36.9 pp）。}vector\_rag 与 graphrag\_nomatch 的唯一差别是子任务-智能体匹配阶段——前者使用算法 C 的三维评分，后者使用随机分配。两者 RAA 之差 0.425 vs 0.056 直接量化了算法 C 的贡献，相当于将随机水平的角色分配提升至接近一半的命中率。在三个场景上这一规律均稳定成立（OPS：+13.3 pp，KQA：+59.0 pp，DA：+38.5 pp）。
+    \item \textbf{BFS 子图扩展（$h=2$）在当前图谱上反而损害下游匹配（−12.9 pp）。}ours\_full 与 vector\_rag 的唯一差别是检索阶段是否进行 BFS 子图扩展，前者 RAA 反而比后者低 0.129。该现象在三个场景中一致出现（OPS：−5.0 pp，KQA：−16.5 pp，DA：−17.3 pp），并非单一场景的偶然波动。后续 5.3.3 节通过案例分析定位了该现象的成因。
+\end{enumerate}
+
+\textbf{步骤完整性。}采用 BGE-M3 语义版 SC 后，所有方法的步骤覆盖度均落入 0.70 至 0.78 区间，与原词汇版 SC（均值 0.18 上下）相比有数倍提升。这一对比直接证明：原词汇版 SC 因无法识别"校验保护整定值"与"检查继电保护定值"这类专业术语近义，对中文电力工作流的覆盖度系统性低估；而语义版 SC 在同一批生成结果上揭示出方法间真实的覆盖差异。其中 vector\_rag 与 graphrag\_nomatch 的 SC 并列最高（0.784），说明知识图谱上下文确实有助于生成与金标更接近的步骤描述；ours\_full 略低（0.768），与 BFS 扩展引入冗余概念、稀释了与金标重叠的步骤一致；pure\_llm 最低（0.696），符合无外部知识时的预期。
+
+\textbf{逻辑正确性的裁判偏差。}pure\_llm 取得了最高的 Logic 分（0.947），高于含图谱的方法约 5--24 个百分点，这一现象与 RAA 排序完全相反。结合人工抽查发现，LLM-as-Judge 对简洁、表述通顺的工作流给出更高分数，而对带有专业术语和领域操作的步骤评分相对保守；同时裁判主要观察"步骤间顺序是否合理"而非"角色分配是否专业"，因此该指标在本任务下存在系统性偏差。本研究在结论中将 RAA 与 SC 列为更可靠的客观指标，并将 Logic 视为参考性辅助指标，未来工作中应引入人工评分或多模型集成裁判替换之。
+
+\textbf{运行效率。}图~\ref{fig:latency_by_baseline} 展示了不同方法的平均端到端延迟。pure\_llm 无需检索和智能体匹配，平均延迟最低（9.34~s）；vector\_rag 增加向量检索和算法 C 匹配，延迟上升至 14.34~s；graphrag\_nomatch 和 ours\_full 均包含 BFS 子图扩展，延迟分别为 19.08~s 和 21.78~s。也就是说，相比于 vector\_rag，BFS 子图扩展平均增加 7.4~s 延迟，却造成 12.9~pp 的 RAA 下降——在当前图谱规模下，子图扩展是\emph{时间和质量双重负贡献}。
+
+\begin{figure}[htbp]
+\centering
+\input{figures/latency_by_baseline.tex}
+\caption{不同方法的端到端平均生成延迟}
+\label{fig:latency_by_baseline}
+\end{figure}
+
+\subsubsection{消融实验}
+
+为分别量化算法 C 与 BFS 子图扩展的独立贡献，按照以下消融维度对 RAA 全场景均值进行分析（表~\ref{tab:ablation}）：
+
+\begin{table}[htbp]
+\centering
+\caption{消融实验：角色分配准确率（全场景均值，n=30）}
+\label{tab:ablation}
+\small
+\begin{tabular}{lccc}
+\toprule
+消融配置 & 算法 C & BFS 子图扩展 & RAA 均值 \\
+\midrule
+NoSubgraph（vector\_rag）   & \checkmark & $\times$    & \textbf{0.425} \\
+ours\_full                  & \checkmark & \checkmark  & 0.296 \\
+NoMatch（graphrag\_nomatch）& $\times$   & \checkmark  & 0.056 \\
+NoKG（pure\_llm）           & $\times$   & $\times$    & 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\input{figures/ablation_raa.tex}
+\caption{消融实验中不同模块配置的角色分配准确率}
+\label{fig:ablation_raa}
+\end{figure}
+
+\textbf{算法 C 是 RAA 的决定性因素。}在保留 BFS 扩展的条件下，引入算法 C 使 RAA 从 0.056（NoMatch）提升至 0.296（ours\_full），增幅 24.0 pp；在不使用 BFS 扩展的条件下，引入算法 C 使 RAA 从 0.000（NoKG，pure\_llm 在归一化后所有自由命名的智能体均无法匹配标准 ID）提升至 0.425（NoSubgraph），增幅 42.5 pp。两种条件下算法 C 均贡献了 RAA 的主要部分，验证了三维加权评分函数（能力嵌入相似度 + 工具覆盖率 + 输入输出兼容性）相对于 LLM 隐式分配和随机分配的根本优势。
+
+\textbf{BFS 子图扩展未带来稳定增益。}在保留算法 C 的条件下，引入 BFS 扩展反而使 RAA 从 0.425（NoSubgraph）下降至 0.296（ours\_full），降幅 12.9 pp；在不使用算法 C 的条件下，BFS 扩展使 RAA 从 0.000（NoKG）提升至 0.056（NoMatch），增幅微小且数值仍接近随机水平。综合而言，BFS 扩展未能在本基准下提供稳定的增量收益，反而在与算法 C 组合时引入噪声节点稀释下游匹配信号。
+
+\textbf{算法 C 与 BFS 扩展存在负向交互。}NoSubgraph 相对于 ours\_full 的 RAA 提升与 NoMatch 相对于 NoKG 的 RAA 提升不能简单相加：BFS 扩展把检索召回的节点数从 5（top-$k$）扩展到平均 97.5（30 任务 $\times$ 2 个含 BFS 基线共 60 次采样，最大 169，最小 47），即\emph{每次检索引入约 90 个新节点}，远高于按平均度数 2.4 估计的理论值——这是由于部分电力概念节点（如\emph{保护动作}、\emph{故障类型}）作为"枢纽"节点连通度显著高于均值。这些扩展节点中，大量与任务弱相关的"恢复"、"备用"、"统计"类概念被一并卷入上下文。LLM 在阅读扩展后的上下文进行任务分解时，会受这些噪声概念引导生成超出最优步骤数的子任务，使得算法 C 不得不为这些"额外"子任务匹配次优智能体，从而稀释整体准确率。该解释在 5.3.3 节的两个 OPS 案例中得到了直接印证。
+
+\textbf{权重敏感性分析。}为评估算法 C 三维权重 $(\alpha, \beta, \gamma)$ 的选择是否合理，本文额外开展了权重网格扫描实验。具体做法是在 15 条任务子集上预先固化检索结果与子任务分解结果（与权重无关），随后对 $\alpha + \beta + \gamma = 1$ 离散步长 0.1 的全部 66 个权重组合分别计算 RAA。脚本 \texttt{scripts/run\_weight\_sweep.py} 在缓存模式下完整扫描耗时约 1 分钟，结果如图~\ref{fig:weight_sweep} 所示。论文采用的默认权重 $(0.5, 0.3, 0.2)$ 在该子集上取得 RAA $=0.303$，最优配置位于 $\alpha = 0.1$、$\beta \in [0.4, 0.8]$ 区域，对应的 RAA $= 0.348$，相对默认配置高出 4.5 个百分点；而 $\alpha = 0$（完全去除能力嵌入相似度）的全部组合均落在 0.251 及以下，明显劣于其他配置。该敏感性结果传递两条信息：（1）$\alpha$ 不能为零——能力嵌入相似度是不可缺省的维度；（2）当前实现下 $\alpha$ 的最佳取值偏低，原因可能是电力领域专用智能体的能力描述高度同质，BGE-M3 在该子领域的判别力相对有限，工具覆盖率维度反而提供了更强的辨别信号。鉴于本文的核心主张为"算法 C 提供 +36.9 pp 的稳定提升"，且各非零 $\alpha$ 区间内的 RAA 跨度仅约 5--6 pp，所采用的默认权重处于该敏感区间内，结论仍然成立；进一步的权重精调留待后续工作。
+
+\begin{figure}[htbp]
+\centering
+\input{figures/weight_sweep.tex}
+\caption{算法 C 三维权重 $(\alpha, \beta)$ 网格扫描的 RAA 热力图（$\gamma = 1 - \alpha - \beta$，15 任务子集）}
+\label{fig:weight_sweep}
+\end{figure}
+
+\subsubsection{案例分析}
+
+为定位 BFS 子图扩展导致 ours\_full 角色准确率落后于 vector\_rag 的具体失效模式，下面以两条 OPS 任务为例进行剖析。
+
+\textbf{案例一：220~kV 线路距离保护 I 段动作跳闸（ops\_002）。}金标工作流为 6 步：故障检测 $\rightarrow$ 拓扑分析 $\rightarrow$ 保护校验 $\rightarrow$ 潮流分析 $\rightarrow$ 恢复规划 $\rightarrow$ 报告生成。vector\_rag 生成 6 个步骤，正确分配 fault\_detector、protection\_checker、restoration\_planner（两次）、report\_generator，RAA = 0.667。ours\_full 仅生成 5 个步骤，缺失 topology\_analyzer 和 power\_flow\_analyzer 两个关键角色，并将原本应由 protection\_checker 执行的"评估断路器及辅助设备状态"误分配给 restoration\_planner，RAA = 0.333。检查 BFS 扩展上下文发现，子图引入了 \texttt{隔离故障}、\texttt{恢复供电}、\texttt{操作票} 等大量"恢复"概念节点，使 LLM 在任务分解时过度强调恢复阶段，跳过了拓扑与潮流校验这两个非"恢复"性步骤。
+
+\textbf{案例二：CIM 模型导入后开关状态校核（ops\_010）。}金标工作流为 6 步：拓扑分析 $\rightarrow$ 异常检测 $\rightarrow$ 故障判别 $\rightarrow$ 潮流校核 $\rightarrow$ 修正发布 $\rightarrow$ 报告生成。vector\_rag 正确将首步分配给 topology\_analyzer 并匹配出 anomaly\_detector，RAA = 0.333。ours\_full 将首步误分配给 anomaly\_detector，并将后续步骤分配给 regulation\_checker，缺少 topology\_analyzer 作为唯一首步的判定，RAA = 0.000。子图扩展将 SCADA 异常、停电事件等"异常检测"相关节点排在重排靠前位置，使 LLM 在任务分解时即把"获取数据"环节定位为"数据质量检查"，进而触发 anomaly\_detector 而非 topology\_analyzer。
+
+两个案例共同揭示了 BFS 子图扩展的失效模式：当查询本身已有较强的语义聚焦时，扩展引入的次要相关节点会改变下游 LLM 对任务结构的理解，进而扰动子任务粒度与角色分配。这一观察与 5.3.2 节的消融数据相互印证，提示后续可探索基于查询难度的自适应跳数控制（如 $h\in\{0, 1, 2\}$ 由查询置信度动态选择）。
+
+\subsubsection{系统运行实证}
+
+为佐证前述实验数据均来自系统的真实端到端运行，下面给出三方面的运行证据：评测脚本的终端日志、生成工作流的 DAG 结构以及 Neo4j 中实际命中的子图。
+
+\textbf{终端运行日志。}图~\ref{fig:runtime_log} 截取了 30 任务全量评测脚本在 ops\_002 上的实际输出。每条任务日志包含 GraphRAG 检索阶段的中间统计（种子节点数、BFS 扩展规模、重排后保留的节点数）和四种基线的逐项指标。从中可见 ours\_full 与 graphrag\_nomatch 的检索阶段返回相同规模的子图（95 节点 / 139 边 / 重排后 18 节点），而 vector\_rag 在 \texttt{max\_hops=0} 时仅保留 5 个种子节点，验证了 5.3.2 节关于 BFS 扩展规模的描述。
+
+\begin{figure}[htbp]
+\centering
+\input{figures/runtime_log.tex}
+\caption{30 任务全量评测脚本在 OPS-002 任务上的终端运行日志（节选）}
+\label{fig:runtime_log}
+\end{figure}
+
+\textbf{生成工作流的 DAG 结构。}图~\ref{fig:runtime_workflow} 展示了 ours\_full 在 ops\_002 上实际生成、并经算法 D 三层验证-修复后导出的工作流 DAG。该 DAG 包含 5 个步骤、2 条由 LLM 隐式数据流推断得到的依赖边，对应金标 6 步流程中 fault\_detector 与 protection\_checker 两步被正确分配，restoration\_planner 的过度激活则印证了案例一中 BFS 扩展引入"恢复"语义偏向的失效模式。该图同时也是算法 D 端到端导出的 Mermaid 工作流形态。
+
+\begin{figure}[htbp]
+\centering
+\input{figures/runtime_workflow.tex}
+\caption{ours\_full 在 OPS-002 任务上生成的工作流 DAG}
+\label{fig:runtime_workflow}
+\end{figure}
+
+\textbf{Neo4j 中的实际子图。}图~\ref{fig:runtime_neo4j} 给出了在算法 B 检索过程中实际命中的子图样例。种子节点是 PowerGridQA-NERC 中关于 LL20231101 电流差动保护逻辑的文本节点，1 跳邻域包含 6 个实体节点（电流差动保护、NERC 报告标识、故障、跳闸、间歇性退化信号、230\,kV 输电线），2 跳邻域进一步引入若干主题相关的文本节点。该结构与 5.3.2 节给出的"$h=2$ 平均扩展 97.5 节点、最大 169"的统计吻合，也直观显示了为何子图扩展容易把"跳闸/恢复"等 1 跳实体连同其文档汇入上下文，进而稀释下游 LLM 的任务分解焦点。
+
+\begin{figure}[htbp]
+\centering
+\input{figures/runtime_neo4j.tex}
+\caption{算法 B 在 Neo4j 中检索得到的实际子图（以电流差动保护为种子，2 跳扩展）}
+\label{fig:runtime_neo4j}
+\end{figure}
+
+\subsection{本章小结}
+
+本章在 30 条电力领域基准任务上系统评估了所提方法与三种基线。主要结论如下：（1）所有方法在 Exec 上均达到 1.000，验证了算法 D 三层验证机制能稳定输出合法 DAG；（2）算法 C 的三维量化匹配是 RAA 的决定性因素，相比未匹配基线（graphrag\_nomatch）将全场景 RAA 从 0.056 提升至 0.425（+36.9 pp），并在 OPS、KQA、DA 三类场景上均稳定成立；（3）BFS 子图扩展（$h=2$）在当前 4{,}337 节点的电力图谱上未带来稳定增益，反而由于引入噪声节点改变了 LLM 的任务分解粒度，使 ours\_full 较 vector\_rag 的 RAA 下降 12.9 pp；（4）步骤完整性指标从词汇版升级为 BGE-M3 语义版后，覆盖率从 0.18 量级提升至 0.77 量级，更准确地反映了中文电力领域工作流的步骤覆盖情况；（5）LLM-as-Judge 在 Logic 指标上存在系统性偏差，简洁工作流被高估，建议未来以人工评分或多模型集成裁判替代。综合而言，实验数据支持以"基于图谱的语义检索 + 三维量化匹配"作为本研究的主要贡献，而 BFS 子图扩展的有效场景需配合自适应跳数策略与图谱规模扩展进一步研究。

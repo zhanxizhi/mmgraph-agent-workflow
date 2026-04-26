@@ -1,0 +1,43 @@
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    font=\small,
+    >=Stealth,
+    stage/.style={rectangle, rounded corners=2pt, draw=#1!70!black, fill=#1!10, minimum width=2.6cm, minimum height=0.95cm, align=center, line width=0.6pt},
+    item/.style={rectangle, rounded corners=2pt, draw=#1!70!black, fill=#1!8, minimum width=2.15cm, minimum height=0.68cm, align=center, line width=0.5pt},
+    data/.style={cylinder, shape border rotate=90, aspect=0.22, draw=#1!70!black, fill=#1!8, minimum width=1.95cm, minimum height=0.9cm, align=center, line width=0.5pt},
+    arrow/.style={->, line width=0.75pt, draw=black!70},
+    group/.style={rectangle, rounded corners=3pt, draw=black!35, fill=black!2, inner sep=8pt}
+]
+
+\node[item=teal] (pdf) {PDF/Word\\技术文档};
+\node[item=teal, below=0.25cm of pdf] (img) {设备图像\\拓扑图};
+\node[item=teal, below=0.25cm of img] (flow) {操作规程\\流程图};
+
+\node[stage=cyan, right=1.05cm of img] (parse) {多模态解析\\与模态分流};
+\node[stage=blue, right=1.15cm of parse] (extract) {LLM/VLM\\实体关系抽取};
+\node[stage=violet, right=1.15cm of extract] (unify) {统一节点表示\\名称/类型/来源};
+\node[stage=orange, right=1.15cm of unify] (embed) {BGE-M3\\语义嵌入};
+\node[data=green, right=1.15cm of embed] (neo4j) {Neo4j\\知识图谱};
+\node[data=red, below=0.6cm of neo4j] (index) {HNSW\\向量索引};
+
+\draw[arrow] (pdf.east) -- (parse.west);
+\draw[arrow] (img.east) -- (parse.west);
+\draw[arrow] (flow.east) -- (parse.west);
+\draw[arrow] (parse) -- (extract);
+\draw[arrow] (extract) -- (unify);
+\draw[arrow] (unify) -- (embed);
+\draw[arrow] (embed) -- (neo4j);
+\draw[arrow] (embed.south east) to[out=-25,in=180] (index.west);
+\draw[arrow] (index.north) -- (neo4j.south);
+
+\node[below=0.18cm of extract, align=center, text=black!65] (triples) {实体、关系、流程步骤\\统一转化为三元组};
+\draw[arrow, dashed, draw=black!45] (extract.south) -- (triples.north);
+\draw[arrow, dashed, draw=black!45] (triples.east) -- (unify.south);
+
+\begin{scope}[on background layer]
+    \node[group, fit=(pdf) (img) (flow), label={[font=\small]above:输入层}] {};
+    \node[group, fit=(parse) (extract) (unify) (embed), label={[font=\small]above:构建层}] {};
+    \node[group, fit=(neo4j) (index), label={[font=\small]above:存储与检索层}] {};
+\end{scope}
+\end{tikzpicture}%
+}

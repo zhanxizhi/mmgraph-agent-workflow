@@ -1,0 +1,154 @@
+\section{多模态知识图谱构建与GraphRAG检索方法}
+
+本章详细阐述本研究的前两项核心方法：面向电力领域的多模态知识图谱构建方法（算法A）和基于子图扩展的GraphRAG检索方法（算法B）。两者共同构成智能体工作流生成系统的知识底座，为后续的任务分解与智能体匹配提供结构化的领域上下文。
+
+\subsection{多模态知识图谱构建方法}
+
+\subsubsection{整体框架设计}
+
+面向电力领域的知识图谱构建面临多模态异构文档的处理挑战。电力系统文档通常混合包含技术规程文本、设备参数表格、单线图和操作流程图，传统纯文本方法只能处理其中一种模态，造成知识抽取严重不完整。
+
+本研究设计的多模态文档解析流水线如图\ref{fig:kg_pipeline}所示，整体分为三个阶段：（1）多模态解析阶段，对输入文档按模态分流处理；（2）实体-关系抽取阶段，利用LLM从各模态信息中抽取实体和关系三元组；（3）图谱写入阶段，将抽取结果统一表示为图节点和边，写入Neo4j图数据库并建立向量索引。
+
+\begin{figure}[htbp]
+\centering
+\input{figures/kg_pipeline.tex}
+\caption{多模态知识图谱构建流程}
+\label{fig:kg_pipeline}
+\end{figure}
+
+\subsubsection{多模态文档解析}
+
+\textbf{文本模态处理。}对于PDF和Word格式的文本文档，采用滑动窗口分块策略将长文本切分为语义完整的段落，每块长度设定为512 tokens，块间重叠64 tokens以保证上下文连续性。随后调用LLM以结构化提示抽取实体（设备名称、技术参数、标准编号等）及实体间关系（"所属"、"连接"、"保护"等），输出为三元组列表。
+
+\textbf{图像模态处理。}对于电力设备照片和拓扑图，首先利用视觉语言模型（GPT-4V）生成图像的自然语言描述，详细描述图像中可见的设备、连接关系和标注信息。随后将生成的描述文本与原图配对，输入LLM进行实体-关系抽取，确保图像信息以结构化形式进入知识图谱。
+
+\textbf{流程图模态处理。}对于操作规程中的流程图，采用类似图像的处理路径，借助VLM识别流程节点（操作步骤、判断条件、执行结果）和有向边（执行顺序、条件分支），将流程图转化为有序的操作步骤序列，并抽取步骤间的顺序关系和条件关系。
+
+\subsubsection{统一节点表示与向量索引}
+
+所有模态的抽取结果统一映射为图节点表示。每个图节点包含以下属性：节点标识符（id）、节点类型（type，取值为 Entity/Relation/Process/Concept）、节点名称（name）、节点描述（description）、节点来源（source，记录原始文档路径和页码）以及语义嵌入向量（embedding）。
+
+语义嵌入向量由BGE-M3模型\cite{chen2024bgem3}生成，维度为1024。BGE-M3支持中英文双语语义编码，适合电力领域中文技术文档的处理需求。嵌入生成时，将节点名称与描述拼接为"[name] [description]"格式后送入模型，保证嵌入向量同时捕捉节点的简短标识和详细语义。
+
+节点和关系写入Neo4j图数据库后，利用Neo4j 5.x内置的向量索引（Vector Index）功能，在embedding属性上建立HNSW（Hierarchical Navigable Small World）向量索引，支持高效的近似最近邻检索。索引参数配置为：相似度度量余弦（cosine），HNSW最大连接数m=16，ef\_construction=64。
+
+最终构建的电力领域知识图谱包含4,337个节点和5,228条关系，覆盖变压器、断路器、保护装置等核心电力设备，以及故障类型、操作规程、技术标准等领域概念。
+
+\subsubsection{算法A的流程描述}
+
+算法A（多模态知识图谱构建）的完整流程如算法\ref{alg:kg_build}所示。
+
+\begin{algorithm}[H]
+\caption{多模态知识图谱构建算法（算法A）}
+\label{alg:kg_build}
+\begin{algorithmic}[1]
+\Require 多模态文档集合 $\mathcal{D} = \{d_1, d_2, \ldots, d_n\}$，LLM $\mathcal{M}$，VLM $\mathcal{V}$，嵌入模型 $\mathcal{E}$
+\Ensure 知识图谱 $G = (V, E)$，向量索引 $\mathrm{Index}$
+\State 初始化空节点集 $V \gets \emptyset$，空边集 $E \gets \emptyset$
+\ForAll{文档 $d_i \in \mathcal{D}$}
+    \State 按模态分类文档内容 $\to$ \{文本块，图像，流程图\}
+    \ForAll{文本块 $t$}
+        \State $T \gets \mathcal{M}(\mathrm{extract\_prompt}(t))$
+        \State 将 $T$ 中的实体和关系加入 $V, E$
+    \EndFor
+    \ForAll{图像 $img$}
+        \State $desc \gets \mathcal{V}(img)$
+        \State $T \gets \mathcal{M}(\mathrm{extract\_prompt}(desc))$
+        \State 将 $T$ 中的实体和关系加入 $V, E$
+    \EndFor
+\EndFor
+\ForAll{节点 $v \in V$}
+    \State $v.\mathrm{embedding} \gets \mathcal{E}(v.\mathrm{name} \mathbin\Vert v.\mathrm{description})$
+\EndFor
+\State 将 $(V, E)$ 写入 Neo4j 图数据库
+\State 在 $\{v.\mathrm{embedding} \mid v \in V\}$ 上建立 HNSW 向量索引 $\mathrm{Index}$
+\State \textbf{return} $G = (V, E)$，$\mathrm{Index}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{基于子图扩展的GraphRAG检索方法}
+
+\subsubsection{检索方法总体设计}
+
+传统RAG以文本块为检索单元，丢失了实体间的结构化关系信息。本研究提出的GraphRAG检索方法以知识图谱为底层数据结构，采用"语义向量检索种子节点 + BFS子图扩展"的两阶段策略，实现多跳关系推理和完整上下文召回。
+
+检索流程分为四个步骤：（1）查询向量化；（2）语义相似度种子检索；（3）BFS子图扩展；（4）LLM重排序与上下文格式化。图\ref{fig:graphrag_expansion}展示了以种子节点为中心的子图扩展与上下文形成过程。
+
+\begin{figure}[htbp]
+\centering
+\input{figures/graphrag_expansion.tex}
+\caption{GraphRAG种子检索与子图扩展示意}
+\label{fig:graphrag_expansion}
+\end{figure}
+
+\subsubsection{查询向量化与种子节点检索}
+
+给定用户查询 $q$，首先利用与索引建立时相同的BGE-M3模型将其编码为查询向量 $\mathbf{q} = \mathcal{E}(q) \in \mathbb{R}^{1024}$。随后在Neo4j向量索引上执行近似最近邻检索，获取与查询语义最相近的 $k$ 个种子节点：
+
+\begin{equation}
+S = \text{TopK}_{v \in V}\left(\text{cosine}(\mathbf{q}, v.\text{embedding}), k\right)
+\end{equation}
+
+其中 $k$ 为超参数（实验中设 $k=5$），余弦相似度定义为：
+
+\begin{equation}
+\text{cosine}(\mathbf{a}, \mathbf{b}) = \frac{\mathbf{a} \cdot \mathbf{b}}{\|\mathbf{a}\| \|\mathbf{b}\|}
+\end{equation}
+
+种子节点集 $S$ 代表与查询最直接相关的图节点，作为后续子图扩展的起点。
+
+\subsubsection{BFS子图扩展}
+
+仅依赖种子节点的局部信息不足以支持多跳推理，因此需要沿图结构扩展上下文范围。本研究采用广度优先搜索（BFS）从种子节点出发，遍历 $h$ 跳邻域（实验中设 $h=2$）：
+
+\begin{equation}
+\mathcal{G}_{\text{sub}} = \text{BFS}(S, G, h) = \bigcup_{v \in S} \{u \in V \mid d_G(v, u) \leq h\}
+\end{equation}
+
+其中 $d_G(v, u)$ 表示图 $G$ 中节点 $v$ 到 $u$ 的最短路径长度。子图 $\mathcal{G}_{\text{sub}}$ 包含所有在 $h$ 跳范围内可达的节点及其连接边，完整保留了局部图结构信息。
+
+BFS扩展的时间复杂度为 $\mathcal{O}(k \cdot (d^h - 1)/(d-1))$，其中 $d$ 为图的平均度数。对于电力知识图谱，实验测量平均度数 $d \approx 2.4$，$k=5, h=2$ 时扩展节点数约为35个，检索时延在可接受范围内。
+
+\subsubsection{LLM重排序与上下文格式化}
+
+BFS扩展可能引入与查询关联度较低的噪声节点。为此，引入LLM重排序机制：将查询 $q$ 与每个候选节点的名称和描述拼接后输入LLM，由LLM输出0到1之间的相关度分数，过滤掉分数低于阈值 $\theta$（实验设 $\theta=0.3$）的节点，保留相关度最高的 $m$（实验设 $m=10$）个节点。
+
+最终，将保留节点及其间的关系格式化为结构化文本上下文，格式设计如下：
+
+\begin{verbatim}
+【知识图谱上下文】
+节点 1: [类型] 名称: 描述
+节点 2: [类型] 名称: 描述
+...
+关系: 节点A --[关系类型]--> 节点B
+关系: 节点C --[关系类型]--> 节点D
+...
+\end{verbatim}
+
+上述格式通过类型标注和关系显式表达，使LLM能够清晰理解图谱结构，有效利用关系信息进行推理。
+
+\subsubsection{算法B的流程描述}
+
+算法B（GraphRAG检索）的完整流程如算法\ref{alg:graphrag}所示。
+
+\begin{algorithm}[H]
+\caption{GraphRAG子图扩展检索算法（算法B）}
+\label{alg:graphrag}
+\begin{algorithmic}[1]
+\Require 查询 $q$，知识图谱 $G=(V,E)$，向量索引 $\mathrm{Index}$，参数 $k, h, \theta, m$
+\Ensure 结构化上下文 $ctx$
+\State 查询向量化：$\mathbf{q} \gets \mathcal{E}(q)$
+\State 种子节点检索：$S \gets \mathrm{TopK}(\mathrm{cosine}(\mathbf{q}, \cdot),\, k)$ via $\mathrm{Index}$
+\State BFS子图扩展：$\mathcal{G}_{\mathrm{sub}} \gets \mathrm{BFS}(S, G, h)$
+\State LLM重排序：对 $\mathcal{G}_{\mathrm{sub}}$ 中每个节点计算相关度分数
+\State 过滤低相关节点（阈值 $\theta$），保留 Top-$m$ 节点
+\State 提取子图中节点间关系边
+\State 格式化上下文：将节点列表和关系列表转为结构化文本 $ctx$
+\State \textbf{return} $ctx$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{本章小结}
+
+本章详细阐述了多模态知识图谱构建（算法A）和GraphRAG检索（算法B）两项核心方法。算法A通过对文本、图像和流程图三种模态的统一解析，利用BGE-M3嵌入模型和Neo4j向量索引，构建了包含4,337个节点的电力领域知识图谱；算法B以语义向量检索为种子节点，结合BFS子图扩展和LLM重排序，实现了多跳关系推理和精准上下文召回。两项方法共同解决了领域知识利用不足和多模态信息融合困难的核心挑战，为后续的子任务分解与智能体匹配提供了高质量的领域知识支撑。第四章将在此基础上，介绍子任务-智能体匹配算法和工作流编排与验证方法。

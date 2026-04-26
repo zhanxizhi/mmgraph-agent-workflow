@@ -1,0 +1,43 @@
+\resizebox{0.98\textwidth}{!}{%
+\begin{tikzpicture}[
+    font=\small,
+    >=Stealth,
+    step/.style={rectangle, rounded corners=2pt, draw=#1!70!black, fill=#1!9, minimum width=2.35cm, minimum height=0.78cm, align=center, line width=0.55pt},
+    verify/.style={rectangle, rounded corners=2pt, draw=#1!70!black, fill=#1!8, minimum width=2.25cm, minimum height=0.72cm, align=center, line width=0.5pt},
+    decision/.style={diamond, aspect=2.05, draw=orange!75!black, fill=orange!10, minimum width=2.05cm, minimum height=0.84cm, align=center, line width=0.55pt},
+    exportbox/.style={rectangle, rounded corners=2pt, draw=green!55!black, fill=green!10, minimum width=1.82cm, minimum height=0.65cm, align=center, line width=0.5pt},
+    arrow/.style={->, line width=0.75pt, draw=black!70}
+]
+
+\node[step=teal] (match) {算法C输出\\子任务-智能体匹配};
+\node[step=cyan, right=0.9cm of match] (nodes) {生成工作流节点\\WorkflowStep};
+\node[step=blue, right=0.9cm of nodes] (deps) {显式依赖\\+ LLM隐式数据流};
+\node[step=violet, right=0.9cm of deps] (dag) {构建DAG\\节点与有向边};
+
+\node[verify=orange, below=1.08cm of dag, xshift=-2.7cm] (v1) {结构验证\\DAG无环};
+\node[verify=orange, right=0.72cm of v1] (v2) {接口验证\\输入输出兼容};
+\node[verify=orange, right=0.72cm of v2] (v3) {语义验证\\任务完整性};
+\node[decision, right=0.9cm of v3] (pass) {是否通过};
+\node[step=red, below=0.88cm of v2] (repair) {修复\\删边/换角色/补步骤};
+
+\node[exportbox, right=0.95cm of pass] (bpmn) {BPMN 2.0};
+\node[exportbox, above=0.42cm of bpmn] (mermaid) {Mermaid};
+\node[exportbox, below=0.42cm of bpmn] (langgraph) {LangGraph};
+
+\draw[arrow] (match) -- (nodes);
+\draw[arrow] (nodes) -- (deps);
+\draw[arrow] (deps) -- (dag);
+\coordinate (dagdrop) at ([yshift=-0.45cm]dag.south);
+\draw[arrow] (dag.south) -- (dagdrop) -| (v1.north);
+\draw[arrow] (v1) -- (v2);
+\draw[arrow] (v2) -- (v3);
+\draw[arrow] (v3) -- (pass);
+\draw[arrow] (pass.south) |- node[pos=0.22, right, text=black!65] {否} (repair.east);
+\coordinate (repairleft) at ([xshift=-0.45cm]repair.west);
+\draw[arrow, dashed] (repair.west) -- (repairleft) -| node[pos=0.27, below, text=black!65] {修复后重检} (v1.south);
+\draw[arrow] (pass.east) -- node[above, text=black!65] {是} (bpmn.west);
+\draw[arrow] (pass.north east) -- (mermaid.west);
+\draw[arrow] (pass.south east) -- (langgraph.west);
+
+\end{tikzpicture}%
+}

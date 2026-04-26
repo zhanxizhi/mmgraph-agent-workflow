@@ -1,0 +1,81 @@
+scene,baseline,task,exec_score,logic_score,step_count,latency_s
+ops,ours_full,"According to NERC Lesson Learned LL20241201, what are events typically represent",1.0,0.8,4,58.84
+ops,pure_llm,"According to NERC Lesson Learned LL20241201, what are events typically represent",1.0,0.9,4,19.93
+ops,vector_rag,"According to NERC Lesson Learned LL20241201, what are events typically represent",1.0,0.8,3,27.73
+ops,graphrag_nomatch,"According to NERC Lesson Learned LL20241201, what are events typically represent",0.0,0.0,0,15.43
+ops,ours_full,In NERC Lesson Learned LL20230401 Why is it important to manually override anti-,1.0,0.9,4,47.03
+ops,pure_llm,In NERC Lesson Learned LL20230401 Why is it important to manually override anti-,1.0,1.0,5,15.47
+ops,vector_rag,In NERC Lesson Learned LL20230401 Why is it important to manually override anti-,1.0,0.8,3,31.62
+ops,graphrag_nomatch,In NERC Lesson Learned LL20230401 Why is it important to manually override anti-,0.0,0.0,0,16.15
+ops,ours_full,"In NERC Lesson Learned LL20190901, why is layered defense superior to a single f",1.0,0.8,4,49.41
+ops,pure_llm,"In NERC Lesson Learned LL20190901, why is layered defense superior to a single f",1.0,0.9333,5,20.12
+ops,vector_rag,"In NERC Lesson Learned LL20190901, why is layered defense superior to a single f",1.0,0.8,3,27.61
+ops,graphrag_nomatch,"In NERC Lesson Learned LL20190901, why is layered defense superior to a single f",0.0,0.0,0,15.63
+ops,ours_full,"In NERC Lesson Learned LL20200601, how many total wind units were part of the sy",1.0,0.8,4,44.73
+ops,pure_llm,"In NERC Lesson Learned LL20200601, how many total wind units were part of the sy",1.0,1.0,1,9.62
+ops,vector_rag,"In NERC Lesson Learned LL20200601, how many total wind units were part of the sy",1.0,0.8,4,34.22
+ops,graphrag_nomatch,"In NERC Lesson Learned LL20200601, how many total wind units were part of the sy",0.0,0.0,0,16.73
+ops,ours_full,"In NERC Lesson Learned LL20200703, what symptoms did the manufacturer note highl",1.0,0.7333,4,47.69
+ops,pure_llm,"In NERC Lesson Learned LL20200703, what symptoms did the manufacturer note highl",1.0,1.0,4,14.22
+ops,vector_rag,"In NERC Lesson Learned LL20200703, what symptoms did the manufacturer note highl",1.0,0.8,4,32.78
+ops,graphrag_nomatch,"In NERC Lesson Learned LL20200703, what symptoms did the manufacturer note highl",0.0,0.0,0,15.8
+ops,ours_full,"In NERC Lesson Learned LL20211001, what generic early actions were taken by enti",1.0,0.8,4,46.13
+ops,pure_llm,"In NERC Lesson Learned LL20211001, what generic early actions were taken by enti",1.0,1.0,3,12.5
+ops,vector_rag,"In NERC Lesson Learned LL20211001, what generic early actions were taken by enti",1.0,0.8,3,29.11
+ops,graphrag_nomatch,"In NERC Lesson Learned LL20211001, what generic early actions were taken by enti",0.0,0.0,0,16.82
+ops,ours_full,"In NERC Lesson Learned LL20240301, what is the effect of hysteresis in OCI input",1.0,0.8,3,45.46
+ops,pure_llm,"In NERC Lesson Learned LL20240301, what is the effect of hysteresis in OCI input",1.0,1.0,4,16.23
+ops,vector_rag,"In NERC Lesson Learned LL20240301, what is the effect of hysteresis in OCI input",1.0,0.8,3,28.76
+ops,graphrag_nomatch,"In NERC Lesson Learned LL20240301, what is the effect of hysteresis in OCI input",0.0,0.0,0,17.27
+ops,ours_full,"In NERC Lesson Learned 20150301, what specific action is recommended for periodi",1.0,0.8,3,48.07
+ops,pure_llm,"In NERC Lesson Learned 20150301, what specific action is recommended for periodi",1.0,1.0,1,9.54
+ops,vector_rag,"In NERC Lesson Learned 20150301, what specific action is recommended for periodi",1.0,0.8,4,33.88
+ops,graphrag_nomatch,"In NERC Lesson Learned 20150301, what specific action is recommended for periodi",0.0,0.0,0,15.54
+ops,ours_full,"In NERC Lesson Learned LL20231101, why did the 230 kV transmission line trip?",1.0,0.8,4,51.13
+ops,pure_llm,"In NERC Lesson Learned LL20231101, why did the 230 kV transmission line trip?",1.0,1.0,3,13.91
+ops,vector_rag,"In NERC Lesson Learned LL20231101, why did the 230 kV transmission line trip?",1.0,0.8,4,35.63
+ops,graphrag_nomatch,"In NERC Lesson Learned LL20231101, why did the 230 kV transmission line trip?",0.0,0.0,0,16.47
+ops,ours_full,"In NERC Lesson Learned LL20170302, what does EMS stand for?",1.0,0.6,5,60.56
+ops,pure_llm,"In NERC Lesson Learned LL20170302, what does EMS stand for?",1.0,1.0,1,8.1
+ops,vector_rag,"In NERC Lesson Learned LL20170302, what does EMS stand for?",1.0,0.8,3,27.72
+ops,graphrag_nomatch,"In NERC Lesson Learned LL20170302, what does EMS stand for?",0.0,0.0,0,16.56
+kqa,ours_full,"In NERC Lesson Learned LL20200703, what elements were taken out of service due t",1.0,0.8,4,48.26
+kqa,pure_llm,"In NERC Lesson Learned LL20200703, what elements were taken out of service due t",1.0,0.9,4,18.27
+kqa,vector_rag,"In NERC Lesson Learned LL20200703, what elements were taken out of service due t",1.0,0.8,4,34.22
+kqa,graphrag_nomatch,"In NERC Lesson Learned LL20200703, what elements were taken out of service due t",0.0,0.0,0,16.03
+kqa,ours_full,According to NERC Lesson Learned LL20221101 (Preventing Unwanted Operations duri,1.0,0.8,3,46.1
+kqa,pure_llm,According to NERC Lesson Learned LL20221101 (Preventing Unwanted Operations duri,1.0,0.9667,3,15.54
+kqa,vector_rag,According to NERC Lesson Learned LL20221101 (Preventing Unwanted Operations duri,1.0,0.8,4,37.11
+kqa,graphrag_nomatch,According to NERC Lesson Learned LL20221101 (Preventing Unwanted Operations duri,0.0,0.0,0,16.06
+kqa,ours_full,"In NERC Lesson Learned 20150202, what was the physical proximity of the protecte",1.0,0.6,4,54.81
+kqa,pure_llm,"In NERC Lesson Learned 20150202, what was the physical proximity of the protecte",1.0,1.0,4,17.41
+kqa,vector_rag,"In NERC Lesson Learned 20150202, what was the physical proximity of the protecte",1.0,0.8,4,35.36
+kqa,graphrag_nomatch,"In NERC Lesson Learned 20150202, what was the physical proximity of the protecte",0.0,0.0,0,16.41
+kqa,ours_full,"In NERC Lesson Learned LL20160602, what does SCADA stand for?",1.0,0.8,4,47.19
+kqa,pure_llm,"In NERC Lesson Learned LL20160602, what does SCADA stand for?",1.0,1.0,1,9.27
+kqa,vector_rag,"In NERC Lesson Learned LL20160602, what does SCADA stand for?",1.0,0.8,4,32.82
+kqa,graphrag_nomatch,"In NERC Lesson Learned LL20160602, what does SCADA stand for?",0.0,0.0,0,16.07
+kqa,ours_full,"In NERC Lesson Learned LL20161103, what was the primary cause of the ICCP failur",1.0,0.8,4,50.67
+kqa,pure_llm,"In NERC Lesson Learned LL20161103, what was the primary cause of the ICCP failur",1.0,1.0,1,10.02
+kqa,vector_rag,"In NERC Lesson Learned LL20161103, what was the primary cause of the ICCP failur",1.0,0.3333,4,41.67
+kqa,graphrag_nomatch,"In NERC Lesson Learned LL20161103, what was the primary cause of the ICCP failur",0.0,0.0,0,18.21
+kqa,ours_full,"In NERC Lesson Learned LL20190804, what was indicated by felt-pen markings found",1.0,0.8,3,48.3
+kqa,pure_llm,"In NERC Lesson Learned LL20190804, what was indicated by felt-pen markings found",1.0,1.0,4,16.81
+kqa,vector_rag,"In NERC Lesson Learned LL20190804, what was indicated by felt-pen markings found",1.0,0.8,4,34.45
+kqa,graphrag_nomatch,"In NERC Lesson Learned LL20190804, what was indicated by felt-pen markings found",0.0,0.0,0,15.97
+kqa,ours_full,"In NERC Lesson Learned LL20201102, what operational workaround was used to resto",1.0,0.8,4,49.28
+kqa,pure_llm,"In NERC Lesson Learned LL20201102, what operational workaround was used to resto",1.0,1.0,4,14.62
+kqa,vector_rag,"In NERC Lesson Learned LL20201102, what operational workaround was used to resto",1.0,0.8,4,31.08
+kqa,graphrag_nomatch,"In NERC Lesson Learned LL20201102, what operational workaround was used to resto",0.0,0.0,0,17.74
+kqa,ours_full,"In NERC Lesson Learned LL20210401, what role do blackstart capable units play in",1.0,0.8,3,45.17
+kqa,pure_llm,"In NERC Lesson Learned LL20210401, what role do blackstart capable units play in",1.0,1.0,4,16.57
+kqa,vector_rag,"In NERC Lesson Learned LL20210401, what role do blackstart capable units play in",1.0,0.8,4,37.77
+kqa,graphrag_nomatch,"In NERC Lesson Learned LL20210401, what role do blackstart capable units play in",0.0,0.0,0,15.91
+kqa,ours_full,What is damping torque in synchronous machines?,1.0,0.8,3,40.72
+kqa,pure_llm,What is damping torque in synchronous machines?,1.0,0.9,5,22.89
+kqa,vector_rag,What is damping torque in synchronous machines?,1.0,0.8,3,26.95
+kqa,graphrag_nomatch,What is damping torque in synchronous machines?,0.0,0.0,0,15.93
+kqa,ours_full,"According to NERC Lesson Learned LL20230401, why was the icing considered unexpe",1.0,0.8,3,44.83
+kqa,pure_llm,"According to NERC Lesson Learned LL20230401, why was the icing considered unexpe",1.0,1.0,4,16.23
+kqa,vector_rag,"According to NERC Lesson Learned LL20230401, why was the icing considered unexpe",1.0,0.8,4,37.05
+kqa,graphrag_nomatch,"According to NERC Lesson Learned LL20230401, why was the icing considered unexpe",0.0,0.0,0,16.09
