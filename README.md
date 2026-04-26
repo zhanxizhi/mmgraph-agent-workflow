@@ -1,84 +1,153 @@
-# 基于多模态图检索增强的智能体工作流生成
+# 基于多模态图检索增强的智能体工作流生成研究
 
-> 华中科技大学 本科毕业设计 (2026)
-> 作者：詹熙至 | 指导教师：莫益军
+> 华中科技大学本科毕业设计（2026）  
+> 作者：詹熙至 | 学号：U202215549 | 指导教师：莫益军
 
 ## 项目简介
 
-本项目构建一个以多模态图谱为知识底座、以 GraphRAG 为检索推理中枢、以智能体特征图为编排依据的工作流自主生成系统，对应任务书四项要求：
+本仓库对应本科毕业设计《基于多模态图检索增强的智能体工作流自主生成方法研究》。项目面向电力系统运维、知识问答和数据分析场景，探索如何利用知识图谱、GraphRAG 检索和智能体特征图，自动生成可验证的多智能体工作流。
 
-1. 基于图的智能体 RAG 分类综述
-2. 基于 GraphRAG 的智能体工作流自主生成框架设计
-3. GraphRAG 与智能体特征融合方法研究
-4. 基于 GraphRAG 的智能体工作流编排规划智能体实现
+当前实现的核心链路为：
 
-## 技术栈
+1. 从电力领域文本资料中抽取实体与关系，构建 Neo4j 知识图谱并建立向量索引；
+2. 通过语义向量检索和 BFS 子图扩展形成 GraphRAG 上下文；
+3. 使用 LLM 将任务分解为子任务，并基于能力相似度、工具覆盖率和输入输出兼容性进行子任务-智能体匹配；
+4. 将匹配结果编排为 DAG 工作流，并进行无环性、接口兼容性和任务完整性验证；
+5. 在 OPS、KQA、DA 三类电力任务上进行 30 条基准任务评测和消融实验。
 
-| 层级 | 组件 |
-|------|------|
-| LLM | OpenAI GPT-4o / Qwen2.5 / DeepSeek (通过统一接口切换) |
-| 多模态编码 | CLIP / SigLIP (视觉), BGE-M3 (文本) |
-| 流程图解析 | PaddleOCR + PP-StructureV2 |
-| 图数据库 | **Neo4j 5.x** |
-| GraphRAG | 微软 graphrag 库 + 自研扩展 |
-| 智能体编排 | **LangGraph** (StateGraph 与本课题图建模天然同构) |
-| 工作流输出 | DAG (JSON) / BPMN 2.0 / Mermaid |
-| 可视化 | Streamlit + BPMN.js |
+说明：论文中讨论了多模态图谱构建框架，但当前端到端实验主要验证文本图谱链路；图像、流程图和跨模态对齐链路保留为后续扩展方向。
+
+## 主要结果
+
+实验结果位于 `data/benchmarks/`，论文图表数据位于 `thesis/figures/data/`。当前 30 条扩展基准任务的全场景结果摘要如下：
+
+| 方法 | Exec | SC | SC_lex | RAA | Logic |
+|---|---:|---:|---:|---:|---:|
+| ours_full | 1.000 | 0.768 | 0.196 | 0.296 | 0.711 |
+| pure_llm | 1.000 | 0.696 | 0.091 | 0.000 | 0.947 |
+| vector_rag | 1.000 | 0.784 | 0.181 | 0.425 | 0.912 |
+| graphrag_nomatch | 1.000 | 0.784 | 0.180 | 0.056 | 0.868 |
+
+主要结论：
+
+- 三维量化匹配算法是角色分配准确率（RAA）的主要增益来源；
+- 固定 `h=2` 的 BFS 子图扩展在当前图谱规模下未带来稳定收益，反而会引入噪声节点；
+- BGE-M3 语义版步骤完整性指标比词汇版更适合中文电力工作流评估；
+- LLM-as-Judge 的 Logic 指标存在偏向流畅文本的系统性偏差，论文中将 RAA 和 SC 作为更可靠的核心指标。
 
 ## 目录结构
 
-```
+```text
 mmgraph-agent-workflow/
 ├── data/
-│   ├── raw/              # 原始多模态数据 (文本/图片/流程图)
-│   ├── processed/        # 预处理后的数据
-│   ├── graphs/           # 构建好的图谱导出 (Neo4j dump / GraphML)
-│   └── benchmarks/       # 评估用数据集与标注
-├── src/
-│   ├── graph_builder/    # 多模态图谱构建模块
-│   ├── graphrag/         # GraphRAG 检索推理模块
-│   ├── agent_workflow/   # 智能体特征图与工作流生成模块
-│   ├── common/           # LLM 接口、配置、日志、工具函数
-│   └── evaluation/       # 评估指标与实验运行器
-├── experiments/
-│   ├── configs/          # YAML 实验配置
-│   ├── scripts/          # 实验启动脚本
-│   ├── results/          # 实验结果 (CSV/JSON)
-│   └── logs/             # 运行日志
-├── notebooks/            # 数据探查与可视化 Jupyter
+│   ├── benchmarks/       # 金标工作流、评测结果、权重扫描缓存
+│   ├── raw/              # 原始数据目录占位；大文件未纳入 Git
+│   ├── processed/        # 预处理数据目录占位
+│   └── graphs/           # 图谱导出目录占位
 ├── docs/
-│   ├── algorithm/        # 算法设计文档 (第四章素材)
-│   ├── experiment/       # 实验方案文档 (第五章素材)
-│   └── paper/            # 论文章节草稿
-├── tests/                # 单元测试
-└── scripts/              # 一次性脚本 (数据下载、Neo4j 初始化等)
+│   ├── algorithm/        # 算法设计文档
+│   └── experiment/       # 实验方案与数据来源说明
+├── experiments/
+│   └── configs/          # 实验配置
+├── scripts/
+│   ├── run_eval_ops_workflow.py  # 30 任务端到端评测脚本
+│   ├── run_weight_sweep.py       # 算法 C 权重敏感性扫描
+│   └── start_neo4j.sh            # Neo4j Docker 启动脚本
+├── src/
+│   ├── agent_workflow/   # 智能体特征图、匹配与 DAG 生成
+│   ├── common/           # LLM 客户端与通用类型
+│   ├── data_loader/      # 电力数据加载
+│   ├── evaluation/       # 评估指标与运行器
+│   ├── graph_builder/    # 知识图谱构建
+│   └── graphrag/         # GraphRAG 检索
+├── tests/                # 轻量回归测试
+└── thesis/               # 毕业论文 LaTeX 源码、图表和 main.pdf
 ```
 
-## 快速开始
+## 环境准备
+
+建议使用 Python 3.11。
 
 ```bash
-# 1. 创建环境
 conda create -n mmgraph python=3.11 -y
 conda activate mmgraph
 pip install -r requirements.txt
-
-# 2. 启动 Neo4j (Docker)
-bash scripts/start_neo4j.sh
-
-# 3. 配置 API Key
-cp .env.example .env  # 编辑填入 OPENAI_API_KEY 等
-
-# 4. 运行最小流程
-python -m src.agent_workflow.main --task "示例任务描述" --config experiments/configs/default.yaml
 ```
 
-## 进度
+复制环境变量模板，并填入 LLM 和 Neo4j 配置：
 
-- [x] 开题报告
-- [x] 项目结构搭建
-- [ ] 多模态图谱构建模块
-- [ ] GraphRAG 检索模块
-- [ ] 智能体特征图构建
-- [ ] 工作流生成模块
-- [ ] 系统集成与实验
-- [ ] 论文撰写
+```bash
+cp .env.example .env
+```
+
+`.env` 不会被提交到 Git。仓库中不包含 API Key。
+
+## 运行方式
+
+启动 Neo4j：
+
+```bash
+bash scripts/start_neo4j.sh
+```
+
+运行一个工作流生成示例：
+
+```bash
+python -m src.agent_workflow.main \
+  --task "220kV线路距离保护I段动作跳闸，重合闸失败，判断故障性质并制定处置方案" \
+  --config experiments/configs/default.yaml
+```
+
+重新生成论文图表数据（不调用 LLM，不连接 Neo4j）：
+
+```bash
+python scripts/run_eval_ops_workflow.py --plots-only
+```
+
+运行完整 30 任务评测（需要 Neo4j 和 LLM API）：
+
+```bash
+python scripts/run_eval_ops_workflow.py
+```
+
+运行算法 C 权重扫描：
+
+```bash
+python scripts/run_weight_sweep.py --use-cache
+```
+
+## 测试
+
+仓库包含两个不依赖外部服务的轻量回归测试：
+
+```bash
+python tests/test_step_completeness.py
+python tests/test_workflow_validator_repair.py
+```
+
+如果安装了 `pytest`，也可以运行：
+
+```bash
+python -m pytest -q
+```
+
+## 论文
+
+论文 LaTeX 源码位于 `thesis/`，当前生成版 PDF 为：
+
+```text
+thesis/main.pdf
+```
+
+参考文献核查记录：
+
+```text
+thesis/reference_verification.md
+```
+
+## 数据与隐私说明
+
+- `.env`、本地编辑器配置、缓存文件、日志和原始大数据未纳入 Git；
+- `data/raw/` 仅保留 `.gitkeep`，需要按 `docs/experiment/data_sources.md` 自行准备原始数据；
+- `data/benchmarks/` 中保留了论文实验所需的金标工作流和评测结果；
+- 论文 PDF、LaTeX 源码和图表数据已纳入仓库，便于复现论文图表。
