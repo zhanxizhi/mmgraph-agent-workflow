@@ -6,13 +6,13 @@
 
 \subsubsection{研究背景与趋势}
 
-近年来，以GPT-4、Claude、DeepSeek为代表的大型语言模型（Large Language Model，LLM）在自然语言理解、逻辑推理与代码生成等任务上取得了显著突破\cite{openai2023gpt4}\cite{anthropic2024claude}，国内研究也开始系统总结大语言模型评测方法与应用风险\cite{luo2024llmeval}。在此基础上，研究者们将LLM的能力进一步延伸至智能体（Agent）系统，通过赋予模型工具调用、记忆管理与多步规划能力，构建能够自主完成复杂任务的智能体框架。
+近年来，以GPT-4、Claude\footnote{Anthropic. Claude 3 Model Card. \url{https://assets.anthropic.com/m/61e7d27f8c8f5919/original/Claude-3-Model-Card.pdf}}、DeepSeek为代表的大型语言模型（Large Language Model，LLM）在自然语言理解、逻辑推理与代码生成等任务上取得了显著突破\cite{openai2023gpt4}，国内研究也开始系统总结大语言模型评测方法与应用风险\cite{luo2024llmeval}。在此基础上，研究者们将LLM的能力进一步延伸至智能体（Agent）系统，通过赋予模型工具调用、记忆管理与多步规划能力，构建能够自主完成复杂任务的智能体框架。
 
-多智能体协作（Multi-Agent Collaboration）是当前智能体研究的重要方向。与单一智能体相比，多智能体系统通过角色分工与并行协作，能够处理更加复杂的长链路任务。LangGraph\cite{langgraph2024}、AutoGen\cite{wu2023autogen}等框架相继涌现，为多智能体工作流的编程式定义提供了基础支撑。然而，上述框架均依赖人工预先设计工作流拓扑，难以应对开放领域的动态任务需求。
+多智能体协作（Multi-Agent Collaboration）是当前智能体研究的重要方向。与单一智能体相比，多智能体系统通过角色分工与并行协作，能够处理更加复杂的长链路任务。LangGraph\footnote{LangChain AI. LangGraph: Building Stateful Multi-Actor Applications with LLMs. \url{https://github.com/langchain-ai/langgraph}}、AutoGen\cite{wu2023autogen}等框架相继涌现，为多智能体工作流的编程式定义提供了基础支撑。然而，上述框架均依赖人工预先设计工作流拓扑，难以应对开放领域的动态任务需求。
 
 与此同时，检索增强生成（Retrieval-Augmented Generation，RAG）技术通过将外部知识注入LLM的推理过程，有效缓解了模型幻觉问题，并显著提升了领域适配能力\cite{lewis2020retrieval}。进一步地，以Microsoft GraphRAG\cite{edge2024graphrag}为代表的图结构检索方法，将知识组织为实体-关系图，利用图遍历实现多跳推理，在复杂问答和摘要任务上展现出超越传统向量检索的性能。
 
-电力系统作为关系国计民生的重要基础设施，其运维过程涉及大量专业知识与复杂操作规程\cite{nerc2023ll}。电力设备故障排查、保护定值校验、新能源消纳分析等任务，需要多个专业角色协同完成，天然契合多智能体工作流的应用场景。已有研究利用深度学习与知识图谱进行变电站设备故障诊断\cite{xiao2022substationkg}，也有研究将知识图谱与溯因推理结合用于智能电网故障诊断\cite{yao2024smartgridkg}。此外，电力系统存在以CIM（Common Information Model）为代表的标准化知识本体，适合以知识图谱的形式进行结构化表达，为GraphRAG方法的应用提供了优质的数据基础。
+电力系统作为关系国计民生的重要基础设施，其运维过程涉及大量专业知识与复杂操作规程\footnote{NERC. Lessons Learned: Protective Relay System Misoperations. \url{https://www.nerc.com/pa/rrm/ea/Lessons\%20Learned\%20Document\%20Library}}。电力设备故障排查、保护定值校验、新能源消纳分析等任务，需要多个专业角色协同完成，天然契合多智能体工作流的应用场景。已有研究利用深度学习与知识图谱进行变电站设备故障诊断\cite{xiao2022substationkg}，也有研究将知识图谱与溯因推理结合用于智能电网故障诊断\cite{yao2024smartgridkg}。此外，电力系统存在以CIM（Common Information Model）为代表的标准化知识本体，适合以知识图谱的形式进行结构化表达，为GraphRAG方法的应用提供了优质的数据基础。
 
 \subsubsection{面临的问题与挑战}
 
@@ -52,7 +52,7 @@ RAPTOR\cite{sarthi2024raptor}通过递归文本摘要树构建多层次上下文
 
 多智能体系统的研究最早可追溯至分布式人工智能领域，近年随LLM的突破而获得新的发展动力。AutoGen\cite{wu2023autogen}设计了可对话的智能体编程接口，支持多智能体协作完成代码生成、数据分析等任务。LangGraph基于有向图的计算模型，将智能体工作流抽象为节点（Node）和边（Edge），支持条件分支和循环结构的精确控制。MetaGPT\cite{hong2023metagpt}将软件工程中的角色分工引入多智能体系统，通过标准化输入输出协议规范智能体间通信。
 
-TaskWeaver\cite{taskweaver2024}提出以代码片段为执行单元的智能体编排机制，适合数据分析类任务；CAMEL\cite{li2023camel}探索了基于角色扮演的多智能体对话范式；CrewAI\cite{crewai2024}以"船员"隐喻组织智能体团队，支持任务的层级分解和并行执行。然而，上述框架均需人工预定义工作流拓扑，缺乏根据任务描述和领域知识自动生成最优工作流的能力。
+TaskWeaver\cite{taskweaver2024}提出以代码片段为执行单元的智能体编排机制，适合数据分析类任务；CAMEL\cite{li2023camel}探索了基于角色扮演的多智能体对话范式；CrewAI\footnote{CrewAI Inc. CrewAI: Framework for Orchestrating Role-Playing, Autonomous AI Agents. \url{https://github.com/crewAIInc/crewAI}}以"船员"隐喻组织智能体团队，支持任务的层级分解和并行执行。然而，上述框架均需人工预定义工作流拓扑，缺乏根据任务描述和领域知识自动生成最优工作流的能力。
 
 \subsubsection{专业领域智能体应用}
 

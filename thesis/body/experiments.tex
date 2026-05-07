@@ -10,13 +10,13 @@
 
 \subsubsection{数据集}
 
-\textbf{知识图谱与领域语料来源。}离线知识图谱构建以 PowerGridQA 中的 NERC 运行经验、Power System Theory 与 Reasoning 三个子集为主要文本来源\cite{powergridqa2026}，并参考 Electricity Knowledge Graph 的电力消费知识组织方式\cite{hanzel2025electricitykg} 和 CIM-Graph 对 CIM 模型的图结构表达\cite{cimanticgraphs2024} 补充实体类型、设备关系和数据字段命名。通过算法 A 解析后写入 Neo4j，最终图谱包含 4{,}337 个节点和 5{,}228 条关系边，覆盖变压器、断路器、继电保护装置、负荷指标、可再生能源出力等核心对象及其故障类型和操作规程。
+\textbf{知识图谱与领域语料来源。}离线知识图谱构建以 PowerGridQA 中的 NERC 运行经验、Power System Theory 与 Reasoning 三个子集为主要文本来源\cite{powergridqa2026}，并参考 Electricity Knowledge Graph 的电力消费知识组织方式\cite{hanzel2025electricitykg} 和 CIM-Graph\footnote{Anderson A, Allwardt C, Stephan E. CIMantic Graphs. \url{https://github.com/PNNL-CIM-Tools/CIM-Graph}} 对 CIM 模型的图结构表达补充实体类型、设备关系和数据字段命名。通过算法 A 解析后写入 Neo4j，最终图谱包含 4{,}337 个节点和 5{,}228 条关系边，覆盖变压器、断路器、继电保护装置、负荷指标、可再生能源出力等核心对象及其故障类型和操作规程。
 
 \textbf{PowerGridQA 数据集。}PowerGridQA 用于电力知识问答（KQA）和电网故障排查（OPS）场景。本文使用的本地版本包含 58{,}713 条问答记录，其中电力系统理论子集 53{,}138 条、NERC 运行经验子集 4{,}787 条、推理场景子集 788 条。KQA 任务主要来自理论与推理子集，OPS 任务主要根据 NERC 运行经验子集改写为故障排查工作流需求。
 
 \textbf{OPSD 时序数据集。}数据分析（DA）场景采用 Open Power System Data（OPSD）平台的时间序列数据\cite{wiese2019opsd}。本文本地实验文件为 \texttt{time\_series\_60min\_singleindex.csv}，包含 50{,}401 条小时级记录和 300 个负荷、风电、光伏、电价等字段；实验脚本读取其中的统计摘要作为图谱文本节点，并构造短期负荷预测、峰谷差识别、新能源出力分析等数据分析工作流任务。
 
-\textbf{扩展数据来源。}除 PowerGridQA 与 OPSD 外，数据准备阶段还核查了 ENTSO-E Transparency Platform\cite{hirth2018entsoe}、Texas A\&M 电网测试案例\cite{tamu2026gridcases,birchfield2017synthetic} 以及 OpenEI/OEDI 美国电力异常报告数据\cite{openei2026outage}。这些数据源分别用于补充欧洲实时运行数据、合成电网拓扑/潮流测试案例和美国停电事件记录，主要作为领域背景与基准任务设计的参考。
+\textbf{扩展数据来源。}除 PowerGridQA 与 OPSD 外，数据准备阶段还核查了 ENTSO-E Transparency Platform\cite{hirth2018entsoe}、Texas A\&M 电网测试案例\footnote{Texas A\&M University. Electric Grid Test Cases. \url{https://electricgrids.engr.tamu.edu/electric-grid-test-cases/}}\cite{birchfield2017synthetic} 以及 OpenEI/OEDI 美国电力异常报告数据\footnote{Open Energy Data Initiative. Event-Correlated Outage Dataset in America. \url{https://data.openei.org/submissions/6458}}。这些数据源分别用于补充欧洲实时运行数据、合成电网拓扑/潮流测试案例和美国停电事件记录，主要作为领域背景与基准任务设计的参考。
 
 \textbf{基准测试集。}为避免仅依赖少量示例造成结论不稳，本文构造了包含 30 条任务的分层基准测试集，OPS、KQA、DA 三类场景各 10 条。每条样本均包含任务编号、数据来源、难度标签和金标准工作流（gold workflow），金标准工作流由 3 至 6 个步骤组成，并标注每步应分配的智能体。OPS 任务覆盖母线故障、线路跳闸、主变保护动作、单相接地、断路器失灵、N-1 越限、极端天气停电、SCADA 遥测异常等场景；KQA 任务覆盖继电保护、电力系统稳定性、SCADA 操作规程、标幺制、N-1 准则、CIM 模型等知识问答；DA 任务覆盖负荷预测、异常检测、新能源出力、电价相关性、备用裕度、停电事件统计和运行日报生成。表~\ref{tab:benchmark_scale} 给出了基准测试集的规模。
 

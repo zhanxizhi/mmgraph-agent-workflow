@@ -1,50 +1,71 @@
-# 参考文献核查记录
+# 参考文献核查与修正记录
 
-核查日期：2026-04-24
+核查日期：2026-05-07
 
-说明：下表按最终 `main.bbl` 中的输出顺序排列，即正文中交叉引用首次出现的顺序。核查目标是确认条目真实存在，并修正题名、作者、DOI/arXiv 编号等明显不一致的元数据。
+说明：本记录用于说明 `ref.bib` 中参考文献的真实性核查、网页资料处理和正式出版信息修正情况。核查重点包括：题名、作者、期刊/会议、卷期页码、DOI/arXiv 编号是否能够在官方或较权威来源中找到。
 
-| 序号 | BibTeX key | 核查结果 | 核查入口 |
-|---:|---|---|---|
-| 1 | `openai2023gpt4` | 已核实 | https://arxiv.org/abs/2303.08774 |
-| 2 | `anthropic2024claude` | 已核实 | https://assets.anthropic.com/m/61e7d27f8c8f5919/original/Claude-3-Model-Card.pdf |
-| 3 | `luo2024llmeval` | 已核实，中文文献 | https://ir.pku.edu.cn/handle/20.500.11897/635701 |
-| 4 | `langgraph2024` | 已核实 | https://github.com/langchain-ai/langgraph |
-| 5 | `wu2023autogen` | 已核实并修正作者列表 | https://arxiv.org/abs/2308.08155 |
-| 6 | `lewis2020retrieval` | 已核实 | https://proceedings.neurips.cc/paper/2020/hash/6b493230205f780e1bc26945df7481e5-Abstract.html |
-| 7 | `edge2024graphrag` | 已核实 | https://arxiv.org/abs/2404.16130 |
-| 8 | `nerc2023ll` | 已核实 | https://www.nerc.com/pa/rrm/ea/Lessons%20Learned%20Document%20Library |
-| 9 | `xiao2022substationkg` | 已核实，中文文献 | https://doi.org/10.12204/j.issn.1000-7229.2022.03.008 |
-| 10 | `yao2024smartgridkg` | 已核实，中文文献 | https://doi.org/10.19725/j.cnki.1007-2322.2024.0314 |
-| 11 | `asai2023selfrag` | 已核实 | https://arxiv.org/abs/2310.11511 |
-| 12 | `yan2024crag` | 已核实 | https://arxiv.org/abs/2401.15884 |
-| 13 | `jeong2024adaptive` | 已核实 | https://arxiv.org/abs/2403.14403 |
-| 14 | `xu2016kgreview` | 已核实，中文文献 | https://doi.org/10.3969/j.issn.1001-0548.2016.04.012 |
-| 15 | `liu2016krl` | 已核实，中文文献 | https://doi.org/10.7544/issn1000-1239.2016.20160020 |
-| 16 | `kgrag2023` | 已核实并修正为 ACL Anthology 条目 | https://aclanthology.org/2023.nlrse-1.1/ |
-| 17 | `sarthi2024raptor` | 已核实 | https://arxiv.org/abs/2401.18059 |
-| 18 | `grag2024` | 已核实并修正 arXiv 编号与作者 | https://arxiv.org/abs/2405.16506 |
-| 19 | `gutierrez2024hipporag` | 已核实 | https://arxiv.org/abs/2405.14831 |
-| 20 | `cao2025kgllmreview` | 已核实，中文文献 | https://doi.org/10.19734/j.issn.1001-3695.2024.12.0532 |
-| 21 | `hong2023metagpt` | 已核实 | https://arxiv.org/abs/2308.00352 |
-| 22 | `taskweaver2024` | 已核实 | https://arxiv.org/abs/2311.17541 |
-| 23 | `li2023camel` | 已核实 | https://proceedings.neurips.cc/paper_files/paper/2023/hash/1b3bcb0b7f471677e29e9fbcb9bb8f6e-Abstract-Conference.html |
-| 24 | `crewai2024` | 已核实 | https://github.com/crewAIInc/crewAI |
-| 25 | `cheng2025gaia` | 已核实 | https://doi.org/10.1038/s41598-025-91940-x |
-| 26 | `radford2021clip` | 已核实 | https://proceedings.mlr.press/v139/radford21a.html |
-| 27 | `liu2023llava` | 已核实 | https://proceedings.neurips.cc/paper_files/paper/2023/hash/6dcf277ea32ce3288914faf369fe6de0-Abstract-Conference.html |
-| 28 | `doclayoutyolo2024` | 已核实并修正作者列表 | https://arxiv.org/abs/2410.12628 |
-| 29 | `smock2022tabletransformer` | 已核实 | https://openaccess.thecvf.com/content/CVPR2022/html/Smock_PubTables-1M_Towards_Comprehensive_Table_Extraction_From_Unstructured_Documents_CVPR_2022_paper.html |
-| 30 | `liu2023mmc` | 已核实并修正题名与作者列表 | https://arxiv.org/abs/2311.10774 |
-| 31 | `chen2024bgem3` | 已核实并修正 arXiv 编号 | https://arxiv.org/abs/2402.03216 |
-| 32 | `wei2022chain` | 已核实 | https://proceedings.neurips.cc/paper_files/paper/2022/hash/9d5609613524ecf4f15af0f7b31abca4-Abstract-Conference.html |
-| 33 | `powergridqa2026` | 已核实，数据集论文 | https://doi.org/10.1109/ACCESS.2026.3652625 |
-| 34 | `hanzel2025electricitykg` | 已核实，电力知识图谱数据论文 | https://doi.org/10.1038/s41597-024-04310-z |
-| 35 | `cimanticgraphs2024` | 已核实，CIM-Graph/CIMantic Graphs 软件 | https://doi.org/10.11578/dc.20240507.3 |
-| 36 | `wiese2019opsd` | 已核实，OPSD 平台论文 | https://doi.org/10.1016/j.apenergy.2018.11.097 |
-| 37 | `hirth2018entsoe` | 已核实，ENTSO-E Transparency Platform 综述论文 | https://doi.org/10.1016/j.apenergy.2018.04.048 |
-| 38 | `tamu2026gridcases` | 已核实，Texas A\&M 电网测试案例页面 | https://electricgrids.engr.tamu.edu/electric-grid-test-cases/ |
-| 39 | `birchfield2017synthetic` | 已核实，合成电网测试案例验证论文 | https://doi.org/10.3390/en10081233 |
-| 40 | `openei2026outage` | 已核实，OpenEI/OEDI 美国停电事件数据集 | https://data.openei.org/submissions/6458 |
+## 处理结论
 
-已删除或替换的无法核实条目：`powerllm2024`、`gridgpt2023`、`energykg2024`、`cimgraph2024`、`zhu2023llmworkflow`、`dockg2023`。
+- 中文论文 6 篇均可检索到对应期刊页面、DOI 页面或机构知识库记录，未发现明显伪造或无法检索条目。
+- 不适合列入参考文献表的网页、软件主页、数据网页等条目已从 `ref.bib` 移出，并在正文中改为脚注引用。
+- 已将能够确认正式会议版本的英文论文从 arXiv/预印本信息修正为正式会议或论文集信息。
+- 未找到稳妥正式会议/期刊记录的条目继续保留 arXiv/技术报告形式，避免虚构卷期、页码或会议名。
+
+## 中文论文核查结果
+
+| BibTeX key | 核查结果 | 核查入口 |
+|---|---|---|
+| `luo2024llmeval` | 已核实，中文文献 | 北京大学机构知识库；题名“ 大语言模型评测综述 ”可检索 |
+| `xu2016kgreview` | 已核实，中文文献 | https://www.juestc.uestc.edu.cn/cn/article/id/41 |
+| `liu2016krl` | 已核实，中文文献 | https://crad.ict.ac.cn/cn/article/doi/10.7544/issn1000-1239.2016.20160020 |
+| `xiao2022substationkg` | 已核实，中文文献 | https://www.cepc.com.cn/CN/10.12204/j.issn.1000-7229.2022.03.008 |
+| `yao2024smartgridkg` | 已核实，中文文献；仍按网络首发/优先发表处理 | https://xddl.ncepujournal.com/article/doi/10.19725/j.cnki.1007-2322.2024.0314 |
+| `cao2025kgllmreview` | 已核实，中文文献 | https://www.arocmag.cn/abs/2024.12.0532 |
+
+## 已修正为正式出版信息的英文条目
+
+| BibTeX key | 修正后的正式出版信息 | 核查入口 |
+|---|---|---|
+| `grag2024` | Findings of the Association for Computational Linguistics: NAACL 2025, 4145--4157, DOI: 10.18653/v1/2025.findings-naacl.232 | https://aclanthology.org/2025.findings-naacl.232/ |
+| `wu2023autogen` | Proceedings of the 1st Conference on Language Modeling, 2024 | https://openreview.net/forum?id=BAakY1hNKS |
+| `hong2023metagpt` | Proceedings of the International Conference on Learning Representations, 2024 | https://proceedings.iclr.cc/paper_files/paper/2024/hash/6507b115562bb0a305f1958ccc87355a-Abstract-Conference.html |
+| `asai2023selfrag` | Proceedings of the International Conference on Learning Representations, 2024 | https://openreview.net/forum?id=hSyW5go0v8 |
+| `jeong2024adaptive` | NAACL 2024 Long Papers, 7036--7050, DOI: 10.18653/v1/2024.naacl-long.389 | https://aclanthology.org/2024.naacl-long.389/ |
+| `gutierrez2024hipporag` | Advances in Neural Information Processing Systems, 37, 59532--59569, DOI: 10.52202/079017-1902 | https://proceedings.neurips.cc/paper_files/paper/2024/hash/6ddc001d07ca4f319af96a3024f6dbd1-Abstract-Conference.html |
+| `sarthi2024raptor` | Proceedings of the International Conference on Learning Representations, 2024 | https://openreview.net/forum?id=GN921JHCRw |
+| `chen2024bgem3` | Findings of the Association for Computational Linguistics: ACL 2024, 2318--2335, DOI: 10.18653/v1/2024.findings-acl.137 | https://aclanthology.org/2024.findings-acl.137/ |
+| `liu2023llava` | Advances in Neural Information Processing Systems, 36, 34892--34916 | https://proceedings.neurips.cc/paper_files/paper/2023/hash/6dcf277ea32ce3288914faf369fe6de0-Abstract-Conference.html |
+| `liu2023mmc` | NAACL 2024 Long Papers, 1287--1310, DOI: 10.18653/v1/2024.naacl-long.70 | https://aclanthology.org/2024.naacl-long.70/ |
+
+## 保留为 arXiv/技术报告的条目
+
+| BibTeX key | 处理结果 |
+|---|---|
+| `edge2024graphrag` | 可检索到 arXiv / Microsoft Research 信息，暂未改为正式期刊或会议 |
+| `openai2023gpt4` | 技术报告，保留 arXiv 形式 |
+| `yan2024crag` | 可检索到 arXiv，未找到稳妥的正式会议/期刊版本 |
+| `taskweaver2024` | Microsoft Research 技术报告/项目论文，保留 arXiv 形式 |
+| `doclayoutyolo2024` | 可检索到 arXiv，未找到稳妥的正式会议/期刊版本 |
+
+## 已移至脚注的网页或软件类资料
+
+以下条目不再放入参考文献表，而是在正文对应位置以脚注形式给出来源链接：
+
+- `langgraph2024`
+- `anthropic2024claude`
+- `crewai2024`
+- `nerc2023ll`
+- `cimanticgraphs2024`
+- `tamu2026gridcases`
+- `openei2026outage`
+
+## 编译验证
+
+已运行：
+
+```text
+biber main
+xelatex -interaction=nonstopmode main.tex
+```
+
+结果：参考文献成功生成；未发现 citation undefined、biblatex rerun 或 Biber 错误。日志中仍存在原模板相关的字体替换、overfull hbox、document class name 等非参考文献问题。
